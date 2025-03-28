@@ -25,25 +25,19 @@ public class CryptoUtils {
 
     // AES Encryption
     public static String encryptAES(String data, SecretKey secretKey, IvParameterSpec iv) throws Exception {
-        System.out.println("Raw Data before Encryption: " + data); // Debug log
         Cipher cipher = Cipher.getInstance(AES_MODE);
         cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
         byte[] encryptedData = cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
-        String encryptedBase64 = Base64.getEncoder().encodeToString(encryptedData);
-        System.out.println("Encrypted Data (Base64): " + encryptedBase64); // Debug log
-        return encryptedBase64;
+        return Base64.getEncoder().encodeToString(encryptedData);
     }
 
     // AES Decryption
     public static String decryptAES(String encryptedData, SecretKey secretKey, IvParameterSpec iv) throws Exception {
-        System.out.println("Encrypted Data (Base64) before Decryption: " + encryptedData); // Debug log
         byte[] decodedData = Base64.getDecoder().decode(encryptedData);
         Cipher cipher = Cipher.getInstance(AES_MODE);
         cipher.init(Cipher.DECRYPT_MODE, secretKey, iv);
         byte[] decryptedData = cipher.doFinal(decodedData);
-        String decryptedString = new String(decryptedData, StandardCharsets.UTF_8);
-        System.out.println("Decrypted Data: " + decryptedString); // Debug log
-        return decryptedString;
+        return new String(decryptedData, StandardCharsets.UTF_8);
     }
 
     // RSA Encryption
@@ -131,8 +125,4 @@ public class CryptoUtils {
         return new IvParameterSpec(decodedIv);
     }
 
-    public static PrivateKey getPrivateKeyFromEnv() throws Exception {
-        String privateKeyBase64 = System.getenv("PRIVATE_KEY_BASE64");
-        return getPrivateKeyFromBase64(privateKeyBase64);
-    }
 }

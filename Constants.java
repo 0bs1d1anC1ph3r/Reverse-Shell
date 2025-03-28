@@ -41,7 +41,6 @@ public class Constants {
 
     public static void saveAESKey(String aesKeyBase64) throws IOException {
         saveConfig("aesKey", aesKeyBase64);
-        System.out.println("Saved AES Key (Base64): " + aesKeyBase64); // Debug log
     }
 
     public static SecretKey loadAESKey() {
@@ -53,7 +52,6 @@ public class Constants {
                 saveAESKey(aesKeyString);
                 return newAESKey;
             } else {
-                System.out.println("Loaded AES Key (Base64): " + aesKeyBase64); // Debug log
                 return CryptoUtils.base64ToSecretKey(aesKeyBase64);
             }
         } catch (IOException | NoSuchAlgorithmException e) {
@@ -64,7 +62,6 @@ public class Constants {
 
     public static void saveIV(String ivBase64) throws IOException {
         saveConfig("iv", ivBase64);
-        System.out.println("Saved IV (Base64): " + ivBase64); // Debug log
     }
 
     public static IvParameterSpec loadIV() {
@@ -76,7 +73,6 @@ public class Constants {
                 saveIV(ivString);
                 return newIv;
             } else {
-                System.out.println("Loaded IV (Base64): " + ivBase64); // Debug log
                 return CryptoUtils.base64ToIv(ivBase64);
             }
         } catch (IOException e) {

