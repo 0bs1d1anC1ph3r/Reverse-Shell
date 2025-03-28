@@ -6,6 +6,14 @@ import java.nio.file.Paths;
 
 public class Persistence {
 
+    public static void setup() {
+        if (OSUtils.isWindows()) {
+            addToRegistry();
+        } else {
+            addSystemdService();
+        }
+    }
+
     //Windows
     public static void addToRegistry() {
         try {
