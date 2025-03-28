@@ -50,8 +50,10 @@ public class Constants {
                 SecretKey newAESKey = CryptoUtils.generateAESKey();
                 String aesKeyString = CryptoUtils.secretKeyToBase64(newAESKey);
                 saveAESKey(aesKeyString);
+                System.out.println("[*] Generated new AES key: " + aesKeyString);
                 return newAESKey;
             } else {
+                System.out.println("[*] Loaded AES key from config: " + aesKeyBase64);
                 return CryptoUtils.base64ToSecretKey(aesKeyBase64);
             }
         } catch (IOException | NoSuchAlgorithmException e) {
@@ -71,8 +73,10 @@ public class Constants {
                 IvParameterSpec newIv = CryptoUtils.generateIV();
                 String ivString = CryptoUtils.ivToBase64(newIv);
                 saveIV(ivString);
+                System.out.println("[*] Generated new IV: " + ivString);
                 return newIv;
             } else {
+                System.out.println("[*] Loaded IV from config: " + ivBase64);
                 return CryptoUtils.base64ToIv(ivBase64);
             }
         } catch (IOException e) {

