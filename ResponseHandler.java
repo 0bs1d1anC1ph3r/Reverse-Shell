@@ -3,10 +3,13 @@ package obs1d1anc1ph3r.reverseshell.server;
 import java.io.*;
 
 public class ResponseHandler implements Runnable {
-    private BufferedReader in;
 
-    public ResponseHandler(BufferedReader in) {
+    private BufferedReader in;
+    private PrintWriter out;
+
+    public ResponseHandler(BufferedReader in, PrintWriter out) {
         this.in = in;
+        this.out = out;
     }
 
     @Override
@@ -14,11 +17,27 @@ public class ResponseHandler implements Runnable {
         try {
             String response;
             while ((response = in.readLine()) != null) {
-                System.out.println("Shell> " + response);
-                System.out.print("Command> ");
+                System.out.println("[*] Response received: " + response);
             }
         } catch (IOException e) {
-            System.err.println("[ERROR] Error receiving response: " + e.getMessage());
+            if (e instanceof java.net.SocketException) {
+                System.err.println("[ERROR] Connection closed by server: " + e.getMessage());
+            } else {
+                System.err.println("[ERROR] Error reading response: " + e.getMessage());
+            }
+        } finally {
+            try {
+                if (in != null) {
+                    in.close();
+                }
+                if (out != null) {
+                    out.close();
+                }
+            } catch (IOException e) {
+                System.err.println("[ERROR] Error closing streams: " + e.getMessage());
+            }
+            System.out.println("[*] ResponseHandler thread exiting.");
         }
     }
+
 }

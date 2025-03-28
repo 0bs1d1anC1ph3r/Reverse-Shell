@@ -35,8 +35,9 @@ public class ScreenShot {
             return byteArrayOutputStream.toByteArray();
 
         } catch (AWTException | HeadlessException | IOException ex) {
-            Logger.getLogger(ScreenShot.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ScreenShot.class.getName()).log(Level.SEVERE, "Error capturing screenshot: ", ex);
+            return new byte[0];
         }
-        return null;
     }
+
 }
