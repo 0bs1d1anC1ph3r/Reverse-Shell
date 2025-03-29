@@ -1,70 +1,36 @@
 package obs1d1anc1ph3r.reverseshell.server;
 
 import java.io.*;
-import java.net.Socket;
+import java.nio.file.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class ReceiveScreenShot {
 
-    public void receiveScreenshot(Socket clientSocket) {
-        new Thread(() -> {
-            try (BufferedInputStream dataIn = new BufferedInputStream(clientSocket.getInputStream())) {
-                int length = readDataLength(dataIn);
-                if (length <= 0) {
-                    System.err.println("[ERROR] Invalid screenshot data length.");
-                    return;
-                }
+    private static final String SCREENSHOT_DIR = "screenshots";
 
-                byte[] imageBytes = new byte[length];
-                int bytesRead = 0;
-                while (bytesRead < length) {
-                    int read = dataIn.read(imageBytes, bytesRead, length - bytesRead);
-                    if (read == -1) {
-                        throw new IOException("End of stream reached unexpectedly.");
-                    }
-                    bytesRead += read;
-                }
-
-                System.out.println("[-] Screenshot received with size: " + imageBytes.length + " bytes.");
-                String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-                File screenshotFile = new File("screenshot_" + timestamp + ".png");
-
-                try (FileOutputStream fileOut = new FileOutputStream(screenshotFile)) {
-                    fileOut.write(imageBytes);
-                    System.out.println("[-] Screenshot saved as '" + screenshotFile.getName() + "'.");
-                }
-
-            } catch (IOException e) {
-                System.err.println("[ERROR] Error receiving screenshot: " + e.getMessage());
-            }
-        }).start();
+    public void receiveScreenshotData(byte[] imageBytes) {
+        saveScreenshot(imageBytes);
     }
 
-    private int readDataLength(BufferedInputStream dataIn) throws IOException {
-        byte[] lengthBytes = new byte[4];
-        int bytesRead = dataIn.read(lengthBytes);
-        if (bytesRead != 4) {
-            throw new IOException("Failed to read data length.");
+    private void saveScreenshot(byte[] imageBytes) {
+        try {
+            Path saveDir = Paths.get(SCREENSHOT_DIR);
+            if (Files.notExists(saveDir)) {
+                Files.createDirectories(saveDir);
+                System.out.println("[INFO] Created directory for screenshots: " + saveDir.toAbsolutePath());
+            }
+
+            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            Path screenshotFile = saveDir.resolve("screenshot_" + timestamp + ".png");
+
+            Files.write(screenshotFile, imageBytes);
+            System.out.println("[INFO] Screenshot saved at: " + screenshotFile.toAbsolutePath());
+            System.out.print("[-] Command> ");
+
+        } catch (IOException ex) {
+            System.err.println("[ERROR] Failed to save screenshot: " + ex.getMessage());
+            ex.printStackTrace();
         }
-        return (lengthBytes[0] & 0xFF) << 24 | (lengthBytes[1] & 0xFF) << 16
-                | (lengthBytes[2] & 0xFF) << 8 | (lengthBytes[3] & 0xFF);
-    }
-
-    public void receiveScreenshot(byte[] imageBytes) {
-        new Thread(() -> {
-            try {
-                String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-                File screenshotFile = new File("screenshot_" + timestamp + ".png");
-
-                try (FileOutputStream fileOut = new FileOutputStream(screenshotFile)) {
-                    fileOut.write(imageBytes);
-                    System.out.println("[-] Screenshot saved as '" + screenshotFile.getName() + "'.");
-                }
-
-            } catch (IOException e) {
-                System.err.println("[ERROR] Error receiving screenshot: " + e.getMessage());
-            }
-        }).start();
     }
 }
