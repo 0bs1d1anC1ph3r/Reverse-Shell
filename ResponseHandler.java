@@ -6,19 +6,21 @@ import java.io.IOException;
 import java.net.Socket;
 
 public class ResponseHandler implements Runnable {
-
+    
     private final DataInputStream dataIn;
     private final DataOutputStream dataOut;
     private final Socket clientSocket;
     private final ReceiveScreenShot screenshotHandler;
-
+    private final FileSaver fileSaver;
+    
     public ResponseHandler(DataInputStream dataIn, DataOutputStream dataOut, Socket clientSocket) {
         this.dataIn = dataIn;
         this.dataOut = dataOut;
         this.clientSocket = clientSocket;
         this.screenshotHandler = new ReceiveScreenShot();
+        this.fileSaver = new FileSaver();
     }
-
+    
     @Override
     public void run() {
         try {
@@ -28,7 +30,7 @@ public class ResponseHandler implements Runnable {
                     System.out.println("[DEBUG] Connection closed, exiting...");
                     break;
                 }
-
+                
                 if (response.equalsIgnoreCase("screenshot")) {
                     int length = dataIn.readInt();
                     if (length > 0) {
@@ -37,6 +39,13 @@ public class ResponseHandler implements Runnable {
                         screenshotHandler.receiveScreenshotData(imageBytes);
                     } else {
                         System.err.println("[ERROR] Invalid screenshot data length: " + length);
+                    }
+                } else if (response.equalsIgnoreCase("file download")) {
+                    int fileLength = dataIn.readInt();
+                    if (fileLength > 0) {
+                        byte[] fileBytes = new byte[fileLength];
+                        dataIn.readFully(fileBytes);
+                        fileSaver.saveFile(fileBytes, clientSocket);
                     }
                 } else {
                     String[] lines = response.split("\\R");
@@ -57,7 +66,7 @@ public class ResponseHandler implements Runnable {
             System.out.println("[*] ResponseHandler thread exiting.");
         }
     }
-
+    
     private void closeResources() {
         try {
             if (dataIn != null) {

