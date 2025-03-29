@@ -6,10 +6,12 @@ public class CommandSender implements Runnable {
 
     private PrintWriter out;
     private BufferedReader userInput;
+    private ReverseShellServer server;
 
-    public CommandSender(PrintWriter out, BufferedReader userInput) {
+    public CommandSender(PrintWriter out, BufferedReader userInput, ReverseShellServer server) {
         this.out = out;
         this.userInput = userInput;
+        this.server = server;
     }
 
     @Override
@@ -20,6 +22,7 @@ public class CommandSender implements Runnable {
             while ((command = userInput.readLine()) != null) {
                 if ("exit".equalsIgnoreCase(command)) {
                     sendCommand("exit");
+                    server.cleanup();
                     break;
                 }
 
@@ -28,8 +31,6 @@ public class CommandSender implements Runnable {
                 } else {
                     sendCommand(command);
                 }
-
-                System.out.print("\nCommand> ");
             }
         } catch (IOException e) {
             System.err.println("[ERROR] Error reading command input: " + e.getMessage());
@@ -42,7 +43,7 @@ public class CommandSender implements Runnable {
         if (out != null) {
             out.println(command);
             out.flush();
-            System.out.println("[*] Command sent: " + command);
+            System.out.println("[-] Command sent: " + command);
         } else {
             System.err.println("[ERROR] Output stream is closed. Unable to send command.");
         }
@@ -52,7 +53,7 @@ public class CommandSender implements Runnable {
         try {
             if (out != null) {
                 out.close();
-                System.out.println("[*] Output stream closed.");
+                System.out.println("[-] Output stream closed.");
             }
         } catch (Exception e) {
             System.err.println("[ERROR] Error during cleanup: " + e.getMessage());

