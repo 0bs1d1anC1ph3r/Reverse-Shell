@@ -32,8 +32,6 @@ public class FileSaver {
             System.out.print("[-] Command> ");
         } catch (IOException ex) {
             System.err.println("[ERROR] Error saving file: " + ex.getMessage());
-            ex.printStackTrace();
         }
     }
-
 }

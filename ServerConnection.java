@@ -13,8 +13,6 @@ public class ServerConnection {
     private DataInputStream textIn;
     private DataOutputStream dataOut;
     private static final Logger logger = Logger.getLogger(ServerConnection.class.getName());
-    //private static final int SOCKET_TIMEOUT = 60000;
-    //private static final int CONNECTION_TIMEOUT = 5000;
 
     public ServerConnection(String serverIp, int serverPort) {
         this.serverIp = serverIp;
@@ -26,13 +24,9 @@ public class ServerConnection {
             System.out.println("[-] Connecting to server...");
             socket = new Socket();
             socket.connect(new InetSocketAddress(serverIp, serverPort));
-            //socket.setSoTimeout(SOCKET_TIMEOUT);
             System.out.println("[-*] Connected to server: " + serverIp + ":" + serverPort);
             textIn = new DataInputStream(socket.getInputStream());
             dataOut = new DataOutputStream(socket.getOutputStream());
-            //} catch (SocketTimeoutException e) {
-            //logger.log(Level.SEVERE, "Connection timed out: {0}", e.getMessage());
-            //throw new IOException("Connection timed out", e);
         } catch (UnknownHostException e) {
             logger.log(Level.SEVERE, "Unknown host: {0}", e.getMessage());
             throw new IOException("Unknown host: " + e.getMessage(), e);
@@ -63,36 +57,10 @@ public class ServerConnection {
         }
     }
 
-    public void sendScreenShot(byte[] imageBytes) {
-        try {
-            if (imageBytes != null && imageBytes.length > 0) {
-                sendResponse("screenshot");
-                dataOut.writeInt(imageBytes.length);
-                dataOut.write(imageBytes);
-                dataOut.flush();
-            } else {
-                logger.warning("Empty screenshot data, nothing sent.");
-                sendResponse("Error: Failed to capture screenshot.");
-            }
-        } catch (IOException ex) {
-            logger.log(Level.SEVERE, "Failed to send screenshot", ex);
-        }
+    public DataOutputStream getDataOut() {
+        return dataOut;
     }
-
-    public void sendFile(byte[] fileBytes) {
-        try {
-            if (fileBytes != null && fileBytes.length > 0) {
-                dataOut.writeInt(fileBytes.length);
-                dataOut.write(fileBytes);
-                dataOut.flush();
-            } else {
-                sendResponse("Error: File is empty.");
-            }
-        } catch (IOException ex) {
-            logger.log(Level.SEVERE, "Failed to send file", ex);
-        }
-    }
-
+    
     public synchronized void cleanup() {
         try {
             if (textIn != null) {
@@ -105,7 +73,6 @@ public class ServerConnection {
                 socket.close();
             }
             System.out.println("[*] Resources cleaned up successfully.");
-            System.exit(0);
         } catch (IOException e) {
             logger.log(Level.SEVERE, "Error closing resources: " + e.getMessage(), e);
         }

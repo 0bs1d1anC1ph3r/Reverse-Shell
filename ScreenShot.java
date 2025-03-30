@@ -1,9 +1,8 @@
-package obs1d1anc1ph3r.reverseshell;
+package obs1d1anc1ph3r.reverseshell.utils;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;

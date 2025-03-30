@@ -1,6 +1,6 @@
 package obs1d1anc1ph3r.reverseshell.server;
 
-import java.io.*;
+import java.io.IOException;
 import java.nio.file.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -27,10 +27,8 @@ public class ReceiveScreenShot {
             Files.write(screenshotFile, imageBytes);
             System.out.println("[INFO] Screenshot saved at: " + screenshotFile.toAbsolutePath());
             System.out.print("[-] Command> ");
-
         } catch (IOException ex) {
             System.err.println("[ERROR] Failed to save screenshot: " + ex.getMessage());
-            ex.printStackTrace();
         }
     }
 }
