@@ -18,12 +18,14 @@ public class ECDHKeyExchange {
 		return privateKey;
 	}
 
+	//Public key, woooo
 	public static byte[] generatePublicKey(byte[] privateKey) {
 		X25519PrivateKeyParameters privateKeyParams = new X25519PrivateKeyParameters(privateKey, 0);
 		X25519PublicKeyParameters publicKeyParams = privateKeyParams.generatePublicKey();
 		return publicKeyParams.getEncoded();
 	}
 
+	//Handshake, woooooo
 	public static byte[] performECDHKeyExchange(byte[] privateKey, byte[] peerPublicKey) {
 		X25519PrivateKeyParameters privateKeyParams = new X25519PrivateKeyParameters(privateKey, 0);
 		X25519PublicKeyParameters peerPublicParams = new X25519PublicKeyParameters(peerPublicKey, 0);
@@ -42,6 +44,7 @@ public class ECDHKeyExchange {
 		return chachaKey;
 	}
 
+	//Hash the thing
 	private static byte[] sha256(byte[] input) {
 		try {
 			MessageDigest digest = MessageDigest.getInstance("SHA-256");
