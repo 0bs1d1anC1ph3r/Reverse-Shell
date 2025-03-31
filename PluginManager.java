@@ -12,11 +12,14 @@ public class PluginManager {
 
 	private final Map<String, CommandPlugin> plugins = new HashMap<>();
 
+	//Do the thing
 	public PluginManager(ServerConnection serverConnection) {
 		loadPlugins(serverConnection);
 	}
-
+	
+	//Doing the thing
 	private void loadPlugins(ServerConnection serverConnection) {
+		//Initialize the stuff and give them the dependancies  
 		ScreenshotCommand screenshotCommand = new ScreenshotCommand();
 		screenshotCommand.setServerConnection(serverConnection);
 		plugins.put(screenshotCommand.getCommandName().toLowerCase(), screenshotCommand);

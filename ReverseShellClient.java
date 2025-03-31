@@ -14,6 +14,7 @@ public class ReverseShellClient {
 
     private final byte[] privateKey;
 
+    //Start the stuff, do the dependancy management and stuff, honestly an okay class, not doing more than it should
     public ReverseShellClient(String serverIp, int serverPort) {
         this.serverConnection = new ServerConnection(serverIp, serverPort);
         this.pluginManager = new PluginManager(serverConnection);

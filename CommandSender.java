@@ -25,7 +25,7 @@ public class CommandSender implements Runnable {
 	public void run() {
 		try {
 			String command;
-			System.out.print("\nCommand> ");
+			System.out.print("\nCommand> "); //Just the first one of these, the rest are handled in other places for formatting reasons
 			while ((command = userInput.readLine()) != null) {
 				if ("exit".equalsIgnoreCase(command)) {
 					sendCommand("exit");
@@ -42,16 +42,17 @@ public class CommandSender implements Runnable {
 		}
 	}
 
+	//Do the thing
 	private void sendCommand(String command) {
     try {
         if (dataOut != null) {
             byte[] nonce = ChaCha20.generateNonce();
             byte[] encryptedCommand = ChaCha20.encrypt(encryptionKey, nonce, command.getBytes());
 
-            dataOut.writeInt(nonce.length + encryptedCommand.length);
-            dataOut.write(nonce);
-            dataOut.write(encryptedCommand);
-            dataOut.flush();
+            dataOut.writeInt(nonce.length + encryptedCommand.length); //Stupid hat
+            dataOut.write(nonce); //Stupid hat
+            dataOut.write(encryptedCommand); //Encrypted command
+            dataOut.flush(); //You better
 
             //logger.info("[-] Command sent (encrypted)");
         } else {

