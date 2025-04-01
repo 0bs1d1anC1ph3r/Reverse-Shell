@@ -23,11 +23,11 @@ public class ScreenShot {
 
 	public byte[] imageBytes() {
 		try {
-			GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+			GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment(); //Doesn't work on wayland, maybe fix it at some point, pretty annoying to fix based on prior struggles
 			GraphicsDevice[] screens = ge.getScreenDevices();
 
 			Rectangle allScreenBounds = new Rectangle();
-			for (GraphicsDevice screen : screens) {
+			for (GraphicsDevice screen : screens) { //Should be able to capture multiple monitors, I only get black images on wayland, but it looks like it's the size
 				Rectangle screenBounds = screen.getDefaultConfiguration().getBounds();
 				allScreenBounds.width += screenBounds.width;
 				allScreenBounds.height = Math.max(allScreenBounds.height, screenBounds.height);

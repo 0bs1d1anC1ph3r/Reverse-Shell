@@ -3,6 +3,7 @@ package obs1d1anc1ph3r.reverseshell.utils;
 public class OSUtils {
 
 	//Windows bad
+	//Next day, still true, windows bad
 	public static boolean isWindows() {
 		return System.getProperty("os.name").toLowerCase().contains("win");
 	}
