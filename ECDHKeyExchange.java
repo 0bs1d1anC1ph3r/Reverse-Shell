@@ -8,7 +8,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
-public class ECDHKeyExchange {
+public class ECDHKeyExchange { //ToDo -- Write actual comments when you're not way too bored to write comments, these aren't going to be helpful at any point in the future
 
 	private static final int KEY_SIZE = 32;
 

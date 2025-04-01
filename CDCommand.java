@@ -9,7 +9,7 @@ public class CDCommand implements CommandPlugin {
 
 	@Override
 	public String getCommandName() {
-		return "cd"; //C Deez Nuts
+		return "cd"; //C Deez Nuts -- Me from the next day, made me laugh a bit, good job me
 	}
 
 	@Override

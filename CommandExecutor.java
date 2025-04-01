@@ -1,4 +1,4 @@
-package obs1d1anc1ph3r.reverseshell;
+package obs1d1anc1ph3r.reverseshell.commandhandling;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -13,6 +13,7 @@ public class CommandExecutor {
 	public String executeCommand(String command) {
 		StringBuilder output = new StringBuilder();
 		//ToDo -- Make the os, shell, and shell flag fixed variables, so it only has to figure it out once
+		//Next day -- might do it later today if I feel like it
 		try {
 			String os = System.getProperty("os.name").toLowerCase();
 			String shell;

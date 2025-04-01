@@ -63,7 +63,7 @@ public class ReverseShellServer {
 	}
 
 	private void closeResources() throws IOException { //Wooooooo, I'm almost done writing comments
-		try {
+		try { //I was not almost done
 			if (userInput != null) {
 				userInput.close();
 			}

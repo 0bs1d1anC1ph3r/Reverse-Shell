@@ -24,7 +24,7 @@ public class ServerSetup {
 		this.port = port;
 	}
 
-	public void setupServer() throws IOException {
+	public void setupServer() throws IOException { //Yeah, this is the port stuff
 		serverSocket = new ServerSocket(port);
 		logger.log(Level.INFO, "[-] Server is running on port {0}", port);
 	}
@@ -34,9 +34,9 @@ public class ServerSetup {
 		clientSocket = serverSocket.accept();
 		logger.log(Level.INFO, "[-*] Connection established with {0}", clientSocket.getInetAddress());
 
-		dataIn = new DataInputStream(clientSocket.getInputStream());
-		dataOut = new DataOutputStream(clientSocket.getOutputStream());
-		userInput = new BufferedReader(new InputStreamReader(System.in));
+		dataIn = new DataInputStream(clientSocket.getInputStream()); //In
+		dataOut = new DataOutputStream(clientSocket.getOutputStream()); //Out
+		userInput = new BufferedReader(new InputStreamReader(System.in)); //Maybe unnecessary-- No, very necessary, you're wrong stupid
 
 		return clientSocket;
 	}
@@ -45,15 +45,16 @@ public class ServerSetup {
 		return serverSocket;
 	}
 
-	public DataInputStream getDataInputStream() {
+	public DataInputStream getDataInputStream() { //Fuck trying to figure out where to put this
 		return dataIn;
 	}
 
-	public DataOutputStream getDataOutputStream() {
+	public DataOutputStream getDataOutputStream() { //And this too. Fuck you.
 		return dataOut;
 	}
 
-	public BufferedReader getUserInput() {
+	public BufferedReader getUserInput() { //Being fully honest, I've forgetten what this does, it might not do anything, I'll look over stuff and see if it's needed.
+		//After looking over stuff, I just realized I was looking at the server stuff instead of the client stuff, I'm dumb
 		return userInput;
 	}
 }
