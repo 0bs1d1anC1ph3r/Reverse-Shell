@@ -1,4 +1,4 @@
-package obs1d1anc1ph3r.reverseshell;
+package obs1d1anc1ph3r.reverseshell.utils;
 
 public class OSUtils {
 

