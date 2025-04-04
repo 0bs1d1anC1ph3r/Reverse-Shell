@@ -1,9 +1,9 @@
-package obs1d1anc1ph3r.reverseshell.responsehandling;
+package obs1d1anc1ph3r.reverseshell.client.responsehandling;
 
 import java.io.IOException;
 import java.security.SecureRandom;
-import obs1d1anc1ph3r.reverseshell.encryption.ChaCha20;
-import obs1d1anc1ph3r.reverseshell.utils.StreamHandler;
+import obs1d1anc1ph3r.reverseshell.client.encryption.ChaCha20;
+import obs1d1anc1ph3r.reverseshell.client.utils.StreamHandler;
 
 public class ResponseSender {
 

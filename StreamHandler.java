@@ -1,4 +1,4 @@
-package obs1d1anc1ph3r.reverseshell.utils;
+package obs1d1anc1ph3r.reverseshell.client.utils;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -9,11 +9,13 @@ public class StreamHandler {
 
 	private final DataInputStream dataIn;
 	private final DataOutputStream dataOut;
+	private volatile boolean isOn;
 	private byte[] encryptionKey;
 
 	public StreamHandler(Socket socket) throws IOException {
 		this.dataIn = new DataInputStream(socket.getInputStream());
 		this.dataOut = new DataOutputStream(socket.getOutputStream());
+		this.isOn = true;
 	}
 
 	public DataInputStream getDataIn() {
@@ -51,4 +53,13 @@ public class StreamHandler {
 	public byte[] getEncryptionKey() {
 		return encryptionKey;
 	}
+
+	public boolean getIsOn() {
+		return isOn;
+	}
+
+	public void turnOff() {
+		isOn = false;
+	}
+
 }

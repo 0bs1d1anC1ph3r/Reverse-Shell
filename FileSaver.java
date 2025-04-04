@@ -1,4 +1,4 @@
-package obs1d1anc1ph3r.reverseshell.server.utils;
+package obs1d1anc1ph3r.reverseshell.server.plugins.reactive.utils;
 
 import java.io.File;
 import java.io.FileOutputStream;

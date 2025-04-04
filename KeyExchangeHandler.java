@@ -1,6 +1,6 @@
-package obs1d1anc1ph3r.reverseshell.encryption;
+package obs1d1anc1ph3r.reverseshell.client.encryption;
 
-import obs1d1anc1ph3r.reverseshell.utils.StreamHandler;
+import obs1d1anc1ph3r.reverseshell.client.utils.StreamHandler;
 import java.io.IOException;
 
 public class KeyExchangeHandler {
@@ -33,13 +33,4 @@ public class KeyExchangeHandler {
 		return ECDHKeyExchange.performECDHKeyExchange(privateKey, serverPublicKey);
 	}
 
-	// Getter for public key
-	public byte[] getPublicKey() {
-		return publicKey;
-	}
-
-	// Getter for private key
-	public byte[] getPrivateKey() {
-		return privateKey;
-	}
 }

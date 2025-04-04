@@ -1,8 +1,9 @@
-package obs1d1anc1ph3r.reverseshell;
+package obs1d1anc1ph3r.reverseshell.client;
 
-import obs1d1anc1ph3r.reverseshell.commandhandling.CommandHandler;
-import obs1d1anc1ph3r.reverseshell.utils.Persistence;
-import obs1d1anc1ph3r.reverseshell.plugins.PluginManager;
+import obs1d1anc1ph3r.reverseshell.client.connection.ServerConnection;
+import obs1d1anc1ph3r.reverseshell.client.commandhandling.CommandHandler;
+import obs1d1anc1ph3r.reverseshell.client.utils.Persistence;
+import obs1d1anc1ph3r.reverseshell.client.plugins.PluginManager;
 
 import java.io.IOException;
 import java.util.logging.*;

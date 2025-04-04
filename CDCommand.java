@@ -1,4 +1,4 @@
-package obs1d1anc1ph3r.reverseshell.plugins;
+package obs1d1anc1ph3r.reverseshell.client.plugins;
 
 import java.io.File;
 import java.io.IOException;
